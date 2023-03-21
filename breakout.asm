@@ -37,6 +37,7 @@ ADDR_KBRD:
 main:
     # Initialize the game
     jal draw_walls
+    j exit
     
 exit:
     li $v0, 10              # terminate the program gracefully
@@ -54,98 +55,108 @@ game_loop:
     b game_loop
     
 
+# ===================================
 # void draw_walls()
 # 
 # Draw the three walls
 draw_walls:
-    # ====================================
+    # -----------------------------------
     # Draw top wall
-    li $t0, 0 # t0 = x_start
-    li $t1, 0 # t1 = y_start
-    li $t2, 128 # t2 = x_end
-    li $t3, 8 # t3 = y_end
+    li $a0, 0 # t0 = x_start
+    li $a1, 0 # t1 = y_start
+    li $a2, 128 # t2 = x_end
+    li $a3, 8 # t3 = y_end
+
+    addi $sp, $sp, -4 # preserve ra of draw_walls
+    sw $ra, 0($sp)
+
+    li $t0, 0x555555 # pass in color argument on stack
+    addi $sp, $sp, -4
+    sw $t0, 0($sp)
     
-    draw_top_loop_x:
-        beq $t0, $t2, draw_top_loop_x_end
-        li $t1, 0
-        draw_top_loop_y:
-            beq $t1, $t3, draw_top_loop_y_end
-            
-            sll $t5, $t0, 0 # t5 = t0 * 4
-            sll $t6, $t1, 5 # t6 = t2 * 128
-            
-            lw $t4, ADDR_DSPL
-            add $t4, $t4, $t5
-            add $t4, $t4, $t6
-            li $t7, 0x555555
-            sw $t7, 0($t4)
-            
-            addi $t1, $t1, 4
-            j draw_top_loop_y
-        draw_top_loop_y_end:
-            addi $t0, $t0, 4
-            j draw_top_loop_x
-    draw_top_loop_x_end:
-    # ====================================  
+    jal draw_rect
     
-    # ====================================
-    # Draw top wall
-    li $t0, 0 # t0 = x_start
-    li $t1, 8 # t1 = y_start
-    li $t2, 4 # t2 = x_end
-    li $t3, 128 # t3 = y_end
+    lw $ra, 0($sp) # restore ra of draw_walls
+    addi $sp, $sp, 4
+    # -----------------------------------  
     
-    draw_left_loop_x:
-        beq $t0, $t2, draw_left_loop_x_end
-        li $t1, 0
-        draw_left_loop_y:
-            beq $t1, $t3, draw_left_loop_y_end
-            
-            sll $t5, $t0, 0 # t5 = t0 * 4
-            sll $t6, $t1, 5 # t6 = t2 * 128
-            
-            lw $t4, ADDR_DSPL
-            add $t4, $t4, $t5
-            add $t4, $t4, $t6
-            li $t7, 0x555555
-            sw $t7, 0($t4)
-            
-            addi $t1, $t1, 4
-            j draw_left_loop_y
-        draw_left_loop_y_end:
-            addi $t0, $t0, 4
-            j draw_left_loop_x
-    draw_left_loop_x_end:
-    # ====================================
+    # -----------------------------------
+    # Draw left wall
+    li $a0, 0 # t0 = x_start
+    li $a1, 8 # t1 = y_start
+    li $a2, 4 # t2 = x_end
+    li $a3, 128 # t3 = y_end
+
+    addi $sp, $sp, -4 # preserve ra of draw_walls
+    sw $ra, 0($sp)
+
+    li $t0, 0x555555 # pass in color argument on stack
+    addi $sp, $sp, -4
+    sw $t0, 0($sp)
     
-    # ====================================
+    jal draw_rect
+    
+    lw $ra, 0($sp) # restore ra of draw_walls
+    addi $sp, $sp, 4
+    # -----------------------------------
+    
+    # -----------------------------------
     # Draw right wall
-    li $t0, 124 # t0 = x_start
-    li $t1, 8 # t1 = y_start
-    li $t2, 128 # t2 = x_end
-    li $t3, 128 # t3 = y_end
+    li $a0, 124 # t0 = x_start
+    li $a1, 8 # t1 = y_start
+    li $a2, 128 # t2 = x_end
+    li $a3, 128 # t3 = y_end
+
+    addi $sp, $sp, -4 # preserve ra of draw_walls
+    sw $ra, 0($sp)
+
+    li $t0, 0x555555 # pass in color argument on stack
+    addi $sp, $sp, -4
+    sw $t0, 0($sp)
     
-    draw_right_loop_x:
-        beq $t0, $t2, draw_right_loop_x_end
-        li $t1, 0
-        draw_right_loop_y:
-            beq $t1, $t3, draw_right_loop_y_end
+    jal draw_rect
+    
+    lw $ra, 0($sp) # restore ra of draw_walls
+    addi $sp, $sp, 4
+    # -----------------------------------
+    jr $ra
+# ===================================
+
+
+# ===================================
+# draw_rect(x_start: int, y_start: int, x_end: int, y_end: int, color: int) -> None
+# 
+# Draw a rectangle with the top left coord of (x_start, y_start) and the bottom right coord of (x_end, y_end)
+draw_rect:
+    # read in parameters from $a0-$a3
+    add $t0, $a0, $zero # t0 = x_start
+    add $t1, $a1, $zero # t1 = y_start
+    add $t2, $a2, $zero # t2 = x_end
+    add $t3, $a3, $zero # t3 = y_end
+
+    lw $t4, 0($sp) # t4 = color
+    addi $sp, $sp, 4 # remove color parameter from stack
+
+    draw_rect_loop_x: # for i in range(start_x, end_x)
+        beq $t0, $t2, draw_rect_loop_x_end
+        add $t1, $a1, $zero
+        draw_rect_loop_y: # for j in range(start_y, end_y)
+            beq $t1, $t3, draw_rect_loop_y_end
             
+            lw $t7, ADDR_DSPL # load starting address of bitmap display
+
+            # calculate offset from ADDR_DSPL
             sll $t5, $t0, 0 # t5 = t0 * 4
-            sll $t6, $t1, 5 # t6 = t2 * 128
+            sll $t6, $t1, 5 # t6 = t2 * 32
             
-            lw $t4, ADDR_DSPL
-            add $t4, $t4, $t5
-            add $t4, $t4, $t6
-            li $t7, 0x555555
-            sw $t7, 0($t4)
+            add $t7, $t7, $t5
+            add $t7, $t7, $t6
+            sw $t4, 0($t7)
             
             addi $t1, $t1, 4
-            j draw_right_loop_y
-        draw_right_loop_y_end:
+            j draw_rect_loop_y
+        draw_rect_loop_y_end:
             addi $t0, $t0, 4
-            j draw_right_loop_x
-    draw_right_loop_x_end:
+            j draw_rect_loop_x
+    draw_rect_loop_x_end:
         jr $ra
-    # ====================================
-    
