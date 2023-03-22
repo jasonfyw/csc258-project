@@ -37,10 +37,10 @@ WALL_COLOUR:
     .word 0x555555
 # Colour of the bricks
 BRICK_COLOUR:
-    .word 0xa82020
+    .word 0x82d2c8
 # Number of rows of bricks
 BRICK_ROWS:
-    .word 4
+    .word 8
 # Width of one brick in pixels
 BRICK_WIDTH:
     .word 8
@@ -64,7 +64,7 @@ BRICK_HEIGHT:
 main:
     # Initialize the game
     jal draw_walls
-    # jal draw_bricks
+    jal draw_bricks
     j exit
     
 exit:
@@ -156,10 +156,51 @@ draw_walls:
 # draw_bricks() -> None
 # ======================================================================
 # Draw all the bricks
-# draw_bricks:
-#     li $t0, 4 # t0 = 4 // start_x
-#     li $t1, 16 # t1 = 16 // start_y
-#     li $t2, 
+draw_bricks:
+    li $s0, 4 # t0 = 4 // start_x
+    li $s1, 16 # t1 = 16 // start_y
+    lw $t2, DISPLAY_WIDTH
+    lw $t3, SIDE_WALL_THICKNESS
+    sub $s2, $t2, $t3 # t2 = end_x
+    lw $t3, BRICK_ROWS
+    sll $t3, $t3, 2
+    add $s3, $t3, $s1 # t3 = end_y
+    lw $s4, BRICK_WIDTH
+    lw $s5, BRICK_HEIGHT
+
+    draw_bricks_loop_x: # for i in range(start_x, end_x) 
+        beq $s0, $s2, draw_bricks_loop_x_end
+        li $s1, 16
+        draw_bricks_loop_y:
+            beq $s1, $s3, draw_bricks_loop_y_end
+
+            add $a0, $s0, $zero
+            add $a1, $s1, $zero
+            add $a2, $a0, $s4
+            add $a3, $a1, $s5
+
+            # -----------------------------------
+            # draw_rect()
+            addi $sp, $sp, -4 # preserve ra of draw_walls
+            sw $ra, 0($sp)
+
+            lw $t0, BRICK_COLOUR # pass in color argument on stack
+            addi $sp, $sp, -4
+            sw $t0, 0($sp)
+            
+            jal draw_rect
+            
+            lw $ra, 0($sp) # restore ra of draw_walls
+            addi $sp, $sp, 4
+            # -----------------------------------
+
+            add $s1, $s1, $s5
+            j draw_bricks_loop_y
+        draw_bricks_loop_y_end:
+            add $s0, $s0, $s4
+            j draw_bricks_loop_x
+    draw_bricks_loop_x_end:
+        jr $ra
 
 
 # ======================================================================
