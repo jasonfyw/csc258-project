@@ -64,9 +64,18 @@ PADDLE_COLOUR:
     .word 0xeeeeee
 # Width of the paddle in pixels
 PADDLE_WIDTH:
-    .word 16
+    .word 20
 # Height of the paddle in pixels
 PADDLE_HEIGHT:
+    .word 4
+# -----------------------------------
+# BALL DATA
+# -----------------------------------
+# Colour of the ball
+BALL_COLOUR:
+    .word 0xe54b4b
+# Width and height of the ball
+BALL_SIZE:
     .word 4
 
 ##############################################################################
@@ -78,6 +87,12 @@ PADDLE_X:
 # Y position of the paddle
 PADDLE_Y:
     .word 120
+# X position of the ball
+BALL_X:
+    .word 64
+# Y position of the ball
+BALL_Y:
+    .word 72
 
 ##############################################################################
 # Code
@@ -93,6 +108,7 @@ main:
     jal draw_walls
     jal draw_bricks
     jal draw_paddle
+    jal draw_ball
     j exit
     
 exit:
@@ -209,7 +225,7 @@ draw_bricks:
 
             # -----------------------------------
             # draw_rect()
-            addi $sp, $sp, -4 # preserve ra of draw_walls
+            addi $sp, $sp, -4 # preserve ra of draw_bricks
             sw $ra, 0($sp)
 
             lw $t0, BRICK_COLOUR # pass in color argument on stack
@@ -218,7 +234,7 @@ draw_bricks:
             
             jal draw_rect
             
-            lw $ra, 0($sp) # restore ra of draw_walls
+            lw $ra, 0($sp) # restore ra of draw_bricks
             addi $sp, $sp, 4
             # -----------------------------------
 
@@ -245,7 +261,7 @@ draw_paddle:
 
     # -----------------------------------
     # draw_rect()
-    addi $sp, $sp, -4 # preserve ra of draw_walls
+    addi $sp, $sp, -4 # preserve ra of draw_paddle
     sw $ra, 0($sp)
 
     lw $t0, PADDLE_COLOUR # pass in color argument on stack
@@ -254,7 +270,36 @@ draw_paddle:
     
     jal draw_rect
     
-    lw $ra, 0($sp) # restore ra of draw_walls
+    lw $ra, 0($sp) # restore ra of draw_paddle
+    addi $sp, $sp, 4
+    # -----------------------------------
+
+    jr $ra
+# ======================================================================
+
+# ======================================================================
+# draw_ball() -> None
+# ======================================================================
+# Draw the ball at position (BALL_X, BALL_Y) stored in immutable data
+draw_ball:
+    lw $a0, BALL_X # t0 = BALL_X
+    lw $a1, BALL_Y # t1 = BALL_Y
+    lw $t0, BALL_SIZE
+    add $a2, $a0, $t0 # t2 = BALL_X + BALL_SIZE
+    add $a3, $a1, $t0 # t3 = BALL_Y + BALL_SIZE
+
+    # -----------------------------------
+    # draw_rect()
+    addi $sp, $sp, -4 # preserve ra of draw_ball
+    sw $ra, 0($sp)
+
+    lw $t0, BALL_COLOUR # pass in color argument on stack
+    addi $sp, $sp, -4
+    sw $t0, 0($sp)
+    
+    jal draw_rect
+    
+    lw $ra, 0($sp) # restore ra of draw_ball
     addi $sp, $sp, 4
     # -----------------------------------
 
