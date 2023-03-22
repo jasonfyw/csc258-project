@@ -14,6 +14,9 @@
 ##############################################################################
 # Immutable Data
 ##############################################################################
+# -----------------------------------
+# DISPLAY AND KBD DATA
+# -----------------------------------
 # Display width in pixels
 DISPLAY_WIDTH:
     .word 128
@@ -26,15 +29,21 @@ ADDR_DSPL:
 # The address of the keyboard. Don't forget to connect it!
 ADDR_KBRD:
     .word 0xffff0000
+# -----------------------------------
+# WALL DATA
+# -----------------------------------
+# Colour of the walls
+WALL_COLOUR:
+    .word 0x555555
 # Thickness of the top wall
 TOP_WALL_THICKNESS:
     .word 8
 # Thickness of one of the side walls
 SIDE_WALL_THICKNESS:
     .word 4
-# Colour of the walls
-WALL_COLOUR:
-    .word 0x555555
+# -----------------------------------
+# BRICK DATA
+# -----------------------------------
 # Colour of the bricks
 BRICK_COLOUR:
     .word 0x82d2c8
@@ -47,10 +56,28 @@ BRICK_WIDTH:
 # Height of one brick in pixels
 BRICK_HEIGHT:
     .word 4
+# -----------------------------------
+# PADDLE DATA
+# -----------------------------------
+# Colour of the paddle
+PADDLE_COLOUR:
+    .word 0xeeeeee
+# Width of the paddle in pixels
+PADDLE_WIDTH:
+    .word 16
+# Height of the paddle in pixels
+PADDLE_HEIGHT:
+    .word 4
 
 ##############################################################################
 # Mutable Data
 ##############################################################################
+# X position of the paddle
+PADDLE_X:
+    .word 56
+# Y position of the paddle
+PADDLE_Y:
+    .word 120
 
 ##############################################################################
 # Code
@@ -65,6 +92,7 @@ main:
     # Initialize the game
     jal draw_walls
     jal draw_bricks
+    jal draw_paddle
     j exit
     
 exit:
@@ -201,7 +229,37 @@ draw_bricks:
             j draw_bricks_loop_x
     draw_bricks_loop_x_end:
         jr $ra
+# ======================================================================
 
+# ======================================================================
+# draw_paddle() -> None
+# ======================================================================
+# Draw the paddle at position (PADDLE_X, PADDLE_Y) stored in immutable data
+draw_paddle:
+    lw $a0, PADDLE_X # t0 = PADDLE_X
+    lw $a1, PADDLE_Y # t1 = PADDLE_Y
+    lw $t0, PADDLE_WIDTH
+    add $a2, $a0, $t0 # t2 = PADDLE_X + PADDLE_WIDTH
+    lw $t1, PADDLE_HEIGHT
+    add $a3, $a1, $t1 # t3 = PADDLE_Y + PADDLE_HEIGHT
+
+    # -----------------------------------
+    # draw_rect()
+    addi $sp, $sp, -4 # preserve ra of draw_walls
+    sw $ra, 0($sp)
+
+    lw $t0, PADDLE_COLOUR # pass in color argument on stack
+    addi $sp, $sp, -4
+    sw $t0, 0($sp)
+    
+    jal draw_rect
+    
+    lw $ra, 0($sp) # restore ra of draw_walls
+    addi $sp, $sp, 4
+    # -----------------------------------
+
+    jr $ra
+# ======================================================================
 
 # ======================================================================
 # draw_rect(x_start: int, y_start: int, x_end: int, y_end: int, color: int) -> None
