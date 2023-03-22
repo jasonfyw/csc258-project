@@ -107,6 +107,8 @@ BALL_Y:
 	# Run the Brick Breaker game.
 main:
     # Initialize the game
+    jal draw_walls
+    jal draw_bricks
     b game_loop
     j exit
     
@@ -126,14 +128,79 @@ game_loop:
     keyboard_input:
         lw $a0, 4($t0)
         beq $a0, 0x61, respond_to_a
+        beq $a0, 0x64, respond_to_d
         j keyboard_input_done
 
         # Move paddle left
         respond_to_a:
+            # Draw over previous paddle with black
+            lw $a0, PADDLE_X
+            lw $a1, PADDLE_Y
+            lw $a2, PADDLE_WIDTH
+            add $a2, $a2, $a0
+            lw $a3, PADDLE_HEIGHT
+            add $a3, $a3, $a1
+
+            addi $sp, $sp, -4 # preserve ra of draw_walls
+            sw $ra, 0($sp)
+
+            lw $t0, BG_COLOUR # pass in color argument on stack
+            addi $sp, $sp, -4
+            sw $t0, 0($sp)
+            
+            jal draw_rect
+            
+            lw $ra, 0($sp) # restore ra of draw_walls
+            addi $sp, $sp, 4
+
+            # Update paddle position
             lw $t1, PADDLE_X
-            add $t1, $t1, -4
-            sw $t1, PADDLE_X
+            lw $t2, SIDE_WALL_THICKNESS
+            # Move paddle if it is not moving into a wall
+            bne $t1, $t2, respond_to_a_update_paddle
             j keyboard_input_done
+            respond_to_a_update_paddle:
+                add $t1, $t1, -4
+                sw $t1, PADDLE_X
+                j keyboard_input_done
+
+        # Move paddle right
+        respond_to_d:
+            # Draw over previous paddle with black
+            lw $a0, PADDLE_X
+            lw $a1, PADDLE_Y
+            lw $a2, PADDLE_WIDTH
+            add $a2, $a2, $a0
+            lw $a3, PADDLE_HEIGHT
+            add $a3, $a3, $a1
+
+            addi $sp, $sp, -4 # preserve ra of draw_walls
+            sw $ra, 0($sp)
+
+            lw $t0, BG_COLOUR # pass in color argument on stack
+            addi $sp, $sp, -4
+            sw $t0, 0($sp)
+            
+            jal draw_rect
+            
+            lw $ra, 0($sp) # restore ra of draw_walls
+            addi $sp, $sp, 4
+
+            # Update paddle position
+            lw $t1, PADDLE_X
+            lw $t2, SIDE_WALL_THICKNESS
+            lw $t3, DISPLAY_WIDTH
+            sub $t2, $t3, $t2
+            lw $t3, PADDLE_WIDTH
+            sub $t2, $t2, $t3
+            # Move paddle if it is not moving into a wall
+            bne $t1, $t2, respond_to_d_update_paddle
+            j keyboard_input_done
+            respond_to_d_update_paddle:
+                add $t1, $t1, 4
+                sw $t1, PADDLE_X
+                j keyboard_input_done
+
 
     # -----------------------------------
     keyboard_input_done:
@@ -141,9 +208,6 @@ game_loop:
         # 2b. Update locations (paddle, ball)
         # -----------------------------------
         # 3. Draw the screen
-        jal clear_screen
-        jal draw_walls
-        jal draw_bricks
         jal draw_paddle
         jal draw_ball
         # 4. Sleep
@@ -153,32 +217,6 @@ game_loop:
 
         # 5. Go back to 1
         b game_loop
-    
-
-# ======================================================================
-# clear_screen() -> None
-# ======================================================================
-# Make the entire screen black
-clear_screen:
-    li $a0, 0
-    li $a1, 0
-    lw $a2, DISPLAY_WIDTH
-    lw $a3, DISPLAY_HEIGHT
-
-    addi $sp, $sp, -4 # preserve ra of draw_walls
-    sw $ra, 0($sp)
-
-    lw $t0, BG_COLOUR # pass in color argument on stack
-    addi $sp, $sp, -4
-    sw $t0, 0($sp)
-    
-    jal draw_rect
-    
-    lw $ra, 0($sp) # restore ra of draw_walls
-    addi $sp, $sp, 4
-
-    jr $ra
-# ======================================================================
 
 
 # ======================================================================
