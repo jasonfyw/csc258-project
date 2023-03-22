@@ -29,6 +29,8 @@ ADDR_DSPL:
 # The address of the keyboard. Don't forget to connect it!
 ADDR_KBRD:
     .word 0xffff0000
+BG_COLOUR:
+    .word 0x000000
 # -----------------------------------
 # WALL DATA
 # -----------------------------------
@@ -105,10 +107,7 @@ BALL_Y:
 	# Run the Brick Breaker game.
 main:
     # Initialize the game
-    jal draw_walls
-    jal draw_bricks
-    jal draw_paddle
-    jal draw_ball
+    b game_loop
     j exit
     
 exit:
@@ -116,16 +115,71 @@ exit:
     syscall
 
 game_loop:
+    # -----------------------------------
 	# 1a. Check if key has been pressed
+    lw $t0, ADDR_KBRD
+    lw $t8, 0($t0)
+    beq $t8, 1, keyboard_input
+    b keyboard_input_done
+    # -----------------------------------
     # 1b. Check which key has been pressed
-    # 2a. Check for collisions
-	# 2b. Update locations (paddle, ball)
-	# 3. Draw the screen
-	# 4. Sleep
+    keyboard_input:
+        lw $a0, 4($t0)
+        beq $a0, 0x61, respond_to_a
+        j keyboard_input_done
 
-    # 5. Go back to 1
-    b game_loop
+        # Move paddle left
+        respond_to_a:
+            lw $t1, PADDLE_X
+            add $t1, $t1, -4
+            sw $t1, PADDLE_X
+            j keyboard_input_done
+
+    # -----------------------------------
+    keyboard_input_done:
+        # 2a. Check for collisions
+        # 2b. Update locations (paddle, ball)
+        # -----------------------------------
+        # 3. Draw the screen
+        jal clear_screen
+        jal draw_walls
+        jal draw_bricks
+        jal draw_paddle
+        jal draw_ball
+        # 4. Sleep
+        li 		$v0, 32
+        li 		$a0, 1
+        syscall
+
+        # 5. Go back to 1
+        b game_loop
     
+
+# ======================================================================
+# clear_screen() -> None
+# ======================================================================
+# Make the entire screen black
+clear_screen:
+    li $a0, 0
+    li $a1, 0
+    lw $a2, DISPLAY_WIDTH
+    lw $a3, DISPLAY_HEIGHT
+
+    addi $sp, $sp, -4 # preserve ra of draw_walls
+    sw $ra, 0($sp)
+
+    lw $t0, BG_COLOUR # pass in color argument on stack
+    addi $sp, $sp, -4
+    sw $t0, 0($sp)
+    
+    jal draw_rect
+    
+    lw $ra, 0($sp) # restore ra of draw_walls
+    addi $sp, $sp, 4
+
+    jr $ra
+# ======================================================================
+
 
 # ======================================================================
 # draw_walls() -> None
