@@ -110,7 +110,6 @@ main:
     jal draw_walls
     jal draw_bricks
     b game_loop
-    j exit
     
 exit:
     li $v0, 10              # terminate the program gracefully
@@ -129,6 +128,7 @@ game_loop:
         lw $a0, 4($t0)
         beq $a0, 0x61, respond_to_a
         beq $a0, 0x64, respond_to_d
+        beq $a0, 0x71, respond_to_q
         j keyboard_input_done
 
         # Move paddle left
@@ -200,6 +200,10 @@ game_loop:
                 add $t1, $t1, 4
                 sw $t1, PADDLE_X
                 j keyboard_input_done
+
+        # Quit game when q pressed
+        respond_to_q:
+            j exit
 
 
     # -----------------------------------
