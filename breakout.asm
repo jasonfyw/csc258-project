@@ -14,12 +14,39 @@
 ##############################################################################
 # Immutable Data
 ##############################################################################
+# Display width in pixels
+DISPLAY_WIDTH:
+    .word 128
+# Display height in pixels
+DISPLAY_HEIGHT:
+    .word 128
 # The address of the bitmap display. Don't forget to connect it!
 ADDR_DSPL:
     .word 0x10008000
 # The address of the keyboard. Don't forget to connect it!
 ADDR_KBRD:
     .word 0xffff0000
+# Thickness of the top wall
+TOP_WALL_THICKNESS:
+    .word 8
+# Thickness of one of the side walls
+SIDE_WALL_THICKNESS:
+    .word 4
+# Colour of the walls
+WALL_COLOUR:
+    .word 0x555555
+# Colour of the bricks
+BRICK_COLOUR:
+    .word 0xa82020
+# Number of rows of bricks
+BRICK_ROWS:
+    .word 4
+# Width of one brick in pixels
+BRICK_WIDTH:
+    .word 8
+# Height of one brick in pixels
+BRICK_HEIGHT:
+    .word 4
 
 ##############################################################################
 # Mutable Data
@@ -37,6 +64,7 @@ ADDR_KBRD:
 main:
     # Initialize the game
     jal draw_walls
+    # jal draw_bricks
     j exit
     
 exit:
@@ -55,9 +83,9 @@ game_loop:
     b game_loop
     
 
-# ===================================
-# void draw_walls()
-# 
+# ======================================================================
+# draw_walls() -> None
+# ======================================================================
 # Draw the three walls
 draw_walls:
     # -----------------------------------
@@ -65,12 +93,12 @@ draw_walls:
     li $a0, 0 # t0 = x_start
     li $a1, 0 # t1 = y_start
     li $a2, 128 # t2 = x_end
-    li $a3, 8 # t3 = y_end
+    lw $a3, TOP_WALL_THICKNESS # t3 = y_end
 
     addi $sp, $sp, -4 # preserve ra of draw_walls
     sw $ra, 0($sp)
 
-    li $t0, 0x555555 # pass in color argument on stack
+    lw $t0, WALL_COLOUR # pass in color argument on stack
     addi $sp, $sp, -4
     sw $t0, 0($sp)
     
@@ -83,14 +111,14 @@ draw_walls:
     # -----------------------------------
     # Draw left wall
     li $a0, 0 # t0 = x_start
-    li $a1, 8 # t1 = y_start
-    li $a2, 4 # t2 = x_end
+    lw $a1, TOP_WALL_THICKNESS # t1 = y_start
+    lw $a2, SIDE_WALL_THICKNESS # t2 = x_end
     li $a3, 128 # t3 = y_end
 
     addi $sp, $sp, -4 # preserve ra of draw_walls
     sw $ra, 0($sp)
 
-    li $t0, 0x555555 # pass in color argument on stack
+    lw $t0, WALL_COLOUR # pass in color argument on stack
     addi $sp, $sp, -4
     sw $t0, 0($sp)
     
@@ -102,15 +130,17 @@ draw_walls:
     
     # -----------------------------------
     # Draw right wall
-    li $a0, 124 # t0 = x_start
-    li $a1, 8 # t1 = y_start
+    li $a0, 128 # t0 = x_start
+    lw $t1, SIDE_WALL_THICKNESS
+    sub $a0, $a0, $t1
+    lw $a1, TOP_WALL_THICKNESS # t1 = y_start
     li $a2, 128 # t2 = x_end
     li $a3, 128 # t3 = y_end
 
     addi $sp, $sp, -4 # preserve ra of draw_walls
     sw $ra, 0($sp)
 
-    li $t0, 0x555555 # pass in color argument on stack
+    lw $t0, WALL_COLOUR # pass in color argument on stack
     addi $sp, $sp, -4
     sw $t0, 0($sp)
     
@@ -120,12 +150,21 @@ draw_walls:
     addi $sp, $sp, 4
     # -----------------------------------
     jr $ra
-# ===================================
+# ======================================================================
+
+# ======================================================================
+# draw_bricks() -> None
+# ======================================================================
+# Draw all the bricks
+# draw_bricks:
+#     li $t0, 4 # t0 = 4 // start_x
+#     li $t1, 16 # t1 = 16 // start_y
+#     li $t2, 
 
 
-# ===================================
+# ======================================================================
 # draw_rect(x_start: int, y_start: int, x_end: int, y_end: int, color: int) -> None
-# 
+# ======================================================================
 # Draw a rectangle with the top left coord of (x_start, y_start) and the bottom right coord of (x_end, y_end)
 draw_rect:
     # read in parameters from $a0-$a3
