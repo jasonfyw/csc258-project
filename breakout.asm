@@ -222,7 +222,7 @@ game_loop:
         jal update_ball_pos
         # 4. Sleep
         li 		$v0, 32
-        li 		$a0, 100
+        li 		$a0, 1000
         syscall
 
         # 5. Go back to 1
@@ -254,27 +254,6 @@ update_ball_pos:
     
     lw $ra, 0($sp) # restore ra of draw_ball
     addi $sp, $sp, 4
-    # -----------------------------------
-
-    # Update ball position based on ball velocity
-    # lw $t0, BALL_X
-    # lw $t1, BALL_Y
-    # lw $t2, BALL_VX
-    # lw $t3, BALL_VY
-    # add $t0, $t0, $t2
-    # add $t1, $t1, $t3
-
-    # Check the color of the ball's prospective next position
-    # lw $t4, ADDR_DSPL # load starting address of bitmap display
-
-    # # calculate offset from ADDR_DSPL
-    # sll $t5, $t0, 0 # t5 = t0 * 4
-    # sll $t6, $t1, 5 # t6 = t2 * 32
-
-    # add $t4, $t4, $t5
-    # add $t4, $t4, $t6
-    # lw $t7, 0($t4) # t7 = colour of the pixel (BALL_X+BALL_VX, BALL_Y+BALL_VY)
-    # lw $t8, BG_COLOUR 
 
     # -----------------------------------
     # Check if there is an obstacle toward the top of the ball and move accordingly
@@ -396,6 +375,9 @@ update_ball_y:
         lw $t1, BALL_Y
         add $t1, $t1, $t3
 
+        li $t4, 128
+        bgt $t1, $t4, exit
+
         lw $t4, ADDR_DSPL # load starting address of bitmap display
         sll $t5, $t0, 0 # t5 = t0 * 4
         sll $t6, $t1, 5 # t6 = t2 * 32
@@ -418,6 +400,9 @@ update_ball_y:
         lw $t0, BALL_X
         lw $t1, BALL_Y
         add $t1, $t1, $t3
+
+        li $t4, 128
+        bgt $t1, $t4, exit
 
         lw $t4, ADDR_DSPL # load starting address of bitmap display
         sll $t5, $t0, 0 # t5 = t0 * 4
