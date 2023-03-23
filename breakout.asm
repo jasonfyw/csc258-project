@@ -3,10 +3,10 @@
 #
 # Student 1: Jason Wang, 1008584649
 ######################## Bitmap Display Configuration ########################
-# - Unit width in pixels:       TODO
-# - Unit height in pixels:      TODO
-# - Display width in pixels:    TODO
-# - Display height in pixels:   TODO
+# - Unit width in pixels:       4
+# - Unit height in pixels:      4
+# - Display width in pixels:    256
+# - Display height in pixels:   256
 # - Base Address for Display:   0x10008000 ($gp)
 ##############################################################################
 
@@ -19,18 +19,22 @@
 # -----------------------------------
 # Display width in pixels
 DISPLAY_WIDTH:
-    .word 128
+    .word 256
 # Display height in pixels
 DISPLAY_HEIGHT:
-    .word 128
+    .word 256
 # The address of the bitmap display. Don't forget to connect it!
 ADDR_DSPL:
     .word 0x10008000
 # The address of the keyboard. Don't forget to connect it!
 ADDR_KBRD:
     .word 0xffff0000
+# Background colour
 BG_COLOUR:
     .word 0x000000
+# Milliseconds between each frame
+FRAME_TIME:
+    .word 83
 # -----------------------------------
 # WALL DATA
 # -----------------------------------
@@ -51,7 +55,10 @@ BRICK_COLOUR:
     .word 0x82d2c8
 # Number of rows of bricks
 BRICK_ROWS:
-    .word 8
+    .word 24
+# y height of first row of bricks
+BRICK_START_HEIGHT:
+    .word 32
 # Width of one brick in pixels
 BRICK_WIDTH:
     .word 8
@@ -66,7 +73,7 @@ PADDLE_COLOUR:
     .word 0xeeeeee
 # Width of the paddle in pixels
 PADDLE_WIDTH:
-    .word 20
+    .word 36
 # Height of the paddle in pixels
 PADDLE_HEIGHT:
     .word 4
@@ -85,16 +92,16 @@ BALL_SIZE:
 ##############################################################################
 # X position of the paddle
 PADDLE_X:
-    .word 56
+    .word 112
 # Y position of the paddle
 PADDLE_Y:
-    .word 120
+    .word 252
 # X position of the ball
 BALL_X:
-    .word 64
+    .word 128
 # Y position of the ball
 BALL_Y:
-    .word 72
+    .word 128
 # X component of the ball velocity in pixels per frame
 BALL_VX:
     .word -4
@@ -142,6 +149,7 @@ game_loop:
             # Draw over previous paddle with black
             lw $a0, PADDLE_X
             lw $a1, PADDLE_Y
+            addi $a1, $a1, -4
             lw $a2, PADDLE_WIDTH
             add $a2, $a2, $a0
             lw $a3, PADDLE_HEIGHT
@@ -175,6 +183,7 @@ game_loop:
             # Draw over previous paddle with black
             lw $a0, PADDLE_X
             lw $a1, PADDLE_Y
+            addi $a1, $a1, -4
             lw $a2, PADDLE_WIDTH
             add $a2, $a2, $a0
             lw $a3, PADDLE_HEIGHT
@@ -222,7 +231,7 @@ game_loop:
         jal update_ball_pos
         # 4. Sleep
         li 		$v0, 32
-        li 		$a0, 100
+        lw 		$a0, FRAME_TIME
         syscall
 
         # 5. Go back to 1
@@ -311,7 +320,7 @@ update_ball_x:
 
     lw $t4, ADDR_DSPL # load starting address of bitmap display
     sll $t5, $t0, 0 # t5 = t0 * 4
-    sll $t6, $t1, 5 # t6 = t2 * 32
+    sll $t6, $t1, 6 # t6 = t2 * 64
     add $t4, $t4, $t5
     add $t4, $t4, $t6
     lw $t7, 0($t4) # t7 = colour of pixel at (BALL_X - 1, BALL_Y)
@@ -342,12 +351,13 @@ update_ball_y:
 
     add $t1, $t1, $t3
 
-    li $t4, 128
+    lw $t4, DISPLAY_HEIGHT
+    addi $t4, $t4, -4
     bgt $t1, $t4, exit
 
     lw $t4, ADDR_DSPL # load starting address of bitmap display
     sll $t5, $t0, 0 # t5 = t0 * 4
-    sll $t6, $t1, 5 # t6 = t2 * 32
+    sll $t6, $t1, 6 # t6 = t2 * 64
     add $t4, $t4, $t5
     add $t4, $t4, $t6
     lw $t7, 0($t4) # t7 = colour of pixel at (BALL_X, BALL_Y - 1)
@@ -373,7 +383,7 @@ draw_walls:
     # Draw top wall
     li $a0, 0 # t0 = x_start
     li $a1, 0 # t1 = y_start
-    li $a2, 128 # t2 = x_end
+    lw $a2, DISPLAY_WIDTH # t2 = x_end
     lw $a3, TOP_WALL_THICKNESS # t3 = y_end
 
     addi $sp, $sp, -4 # preserve ra of draw_walls
@@ -394,7 +404,7 @@ draw_walls:
     li $a0, 0 # t0 = x_start
     lw $a1, TOP_WALL_THICKNESS # t1 = y_start
     lw $a2, SIDE_WALL_THICKNESS # t2 = x_end
-    li $a3, 128 # t3 = y_end
+    lw $a3, DISPLAY_HEIGHT # t3 = y_end
 
     addi $sp, $sp, -4 # preserve ra of draw_walls
     sw $ra, 0($sp)
@@ -411,12 +421,12 @@ draw_walls:
     
     # -----------------------------------
     # Draw right wall
-    li $a0, 128 # t0 = x_start
+    lw $a0, DISPLAY_WIDTH # t0 = x_start
     lw $t1, SIDE_WALL_THICKNESS
     sub $a0, $a0, $t1
     lw $a1, TOP_WALL_THICKNESS # t1 = y_start
-    li $a2, 128 # t2 = x_end
-    li $a3, 128 # t3 = y_end
+    lw $a2, DISPLAY_WIDTH # t2 = x_end
+    lw $a3, DISPLAY_HEIGHT # t3 = y_end
 
     addi $sp, $sp, -4 # preserve ra of draw_walls
     sw $ra, 0($sp)
@@ -438,8 +448,7 @@ draw_walls:
 # ======================================================================
 # Draw all the bricks
 draw_bricks:
-    li $s0, 4 # t0 = 4 // start_x
-    li $s1, 16 # t1 = 16 // start_y
+    lw $s0, SIDE_WALL_THICKNESS # t0 = start_x
     lw $t2, DISPLAY_WIDTH
     lw $t3, SIDE_WALL_THICKNESS
     sub $s2, $t2, $t3 # t2 = end_x
@@ -451,7 +460,7 @@ draw_bricks:
 
     draw_bricks_loop_x: # for i in range(start_x, end_x) 
         beq $s0, $s2, draw_bricks_loop_x_end
-        li $s1, 16
+        lw $s1, BRICK_START_HEIGHT
         draw_bricks_loop_y:
             beq $s1, $s3, draw_bricks_loop_y_end
 
@@ -491,6 +500,7 @@ draw_bricks:
 draw_paddle:
     lw $a0, PADDLE_X # t0 = PADDLE_X
     lw $a1, PADDLE_Y # t1 = PADDLE_Y
+    addi $a1, $a1, -4
     lw $t0, PADDLE_WIDTH
     add $a2, $a0, $t0 # t2 = PADDLE_X + PADDLE_WIDTH
     lw $t1, PADDLE_HEIGHT
@@ -567,7 +577,7 @@ draw_rect:
 
             # calculate offset from ADDR_DSPL
             sll $t5, $t0, 0 # t5 = t0 * 4
-            sll $t6, $t1, 5 # t6 = t2 * 32
+            sll $t6, $t1, 6 # t6 = t2 * 64
             
             add $t7, $t7, $t5
             add $t7, $t7, $t6
