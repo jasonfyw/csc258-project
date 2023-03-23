@@ -95,6 +95,12 @@ BALL_X:
 # Y position of the ball
 BALL_Y:
     .word 72
+# X component of the ball velocity in pixels per frame
+BALL_VX:
+    .word 0
+# Y component of the ball velocity in pixels per frame
+BALL_VY:
+    .word 4
 
 ##############################################################################
 # Code
@@ -213,15 +219,64 @@ game_loop:
         # -----------------------------------
         # 3. Draw the screen
         jal draw_paddle
-        jal draw_ball
+        jal update_ball_pos
         # 4. Sleep
         li 		$v0, 32
-        li 		$a0, 1
+        li 		$a0, 200
         syscall
 
         # 5. Go back to 1
         b game_loop
 
+
+# ======================================================================
+# update_ball_pos() -> None
+# ======================================================================
+# Update the position of the ball for the next frame
+update_ball_pos:
+    # Draw over previous ball position with background colour
+    lw $a0, BALL_X # t0 = BALL_X
+    lw $a1, BALL_Y # t1 = BALL_Y
+    lw $t0, BALL_SIZE
+    add $a2, $a0, $t0 # t2 = BALL_X + BALL_SIZE
+    add $a3, $a1, $t0 # t3 = BALL_Y + BALL_SIZE
+
+    # # -----------------------------------
+    # draw_rect()
+    addi $sp, $sp, -4 # preserve ra of draw_ball
+    sw $ra, 0($sp)
+
+    lw $t0, BG_COLOUR # pass in color argument on stack
+    addi $sp, $sp, -4
+    sw $t0, 0($sp)
+    
+    jal draw_rect
+    
+    lw $ra, 0($sp) # restore ra of draw_ball
+    addi $sp, $sp, 4
+    # -----------------------------------
+
+    # Update ball position based on ball velocity
+    lw $t0, BALL_X
+    lw $t1, BALL_Y
+    lw $t2, BALL_VX
+    lw $t3, BALL_VY
+    add $t0, $t0, $t2
+    add $t1, $t1, $t3
+    sw $t0, BALL_X
+    sw $t1, BALL_Y
+
+    # -----------------------------------
+    # Draw ball at new position
+    addi $sp, $sp, -4 # preserve ra of update_ball_pos
+    sw $ra, 0($sp)
+
+    jal draw_ball
+
+    lw $ra, 0($sp) # restore ra of update_ball_pos
+    addi $sp, $sp, 4
+
+    jr $ra
 
 # ======================================================================
 # draw_walls() -> None
