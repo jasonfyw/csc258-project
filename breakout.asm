@@ -97,10 +97,10 @@ BALL_Y:
     .word 72
 # X component of the ball velocity in pixels per frame
 BALL_VX:
-    .word 0
+    .word -4
 # Y component of the ball velocity in pixels per frame
 BALL_VY:
-    .word 4
+    .word -4
 
 ##############################################################################
 # Code
@@ -222,7 +222,7 @@ game_loop:
         jal update_ball_pos
         # 4. Sleep
         li 		$v0, 32
-        li 		$a0, 200
+        li 		$a0, 100
         syscall
 
         # 5. Go back to 1
@@ -257,6 +257,44 @@ update_ball_pos:
     # -----------------------------------
 
     # Update ball position based on ball velocity
+    # lw $t0, BALL_X
+    # lw $t1, BALL_Y
+    # lw $t2, BALL_VX
+    # lw $t3, BALL_VY
+    # add $t0, $t0, $t2
+    # add $t1, $t1, $t3
+
+    # Check the color of the ball's prospective next position
+    # lw $t4, ADDR_DSPL # load starting address of bitmap display
+
+    # # calculate offset from ADDR_DSPL
+    # sll $t5, $t0, 0 # t5 = t0 * 4
+    # sll $t6, $t1, 5 # t6 = t2 * 32
+
+    # add $t4, $t4, $t5
+    # add $t4, $t4, $t6
+    # lw $t7, 0($t4) # t7 = colour of the pixel (BALL_X+BALL_VX, BALL_Y+BALL_VY)
+    # lw $t8, BG_COLOUR 
+
+    # -----------------------------------
+    # Check if there is an obstacle toward the top of the ball and move accordingly
+    addi $sp, $sp, -4 # preserve ra of update_ball_pos
+    sw $ra, 0($sp)
+
+    jal check_ball_y
+
+    lw $ra, 0($sp) # restore ra of update_ball_pos
+    addi $sp, $sp, 4
+
+    addi $sp, $sp, -4 # preserve ra of update_ball_pos
+    sw $ra, 0($sp)
+
+    jal check_ball_x
+
+    lw $ra, 0($sp) # restore ra of update_ball_pos
+    addi $sp, $sp, 4
+
+
     lw $t0, BALL_X
     lw $t1, BALL_Y
     lw $t2, BALL_VX
@@ -277,6 +315,121 @@ update_ball_pos:
     addi $sp, $sp, 4
 
     jr $ra
+
+
+
+check_ball_x:
+    lw $t0, BALL_X
+    lw $t1, BALL_Y
+    lw $t2, BALL_VX
+    lw $t3, BALL_VY
+ 
+    bltz $t2, check_ball_x_left # if BALL_VX < 0
+    bgtz $t2, check_ball_x_right # if BALL_VX > 0
+
+    check_ball_x_left:
+        lw $t0, BALL_X
+        lw $t1, BALL_Y
+        add $t0, $t0, $t2
+
+        lw $t4, ADDR_DSPL # load starting address of bitmap display
+        sll $t5, $t0, 0 # t5 = t0 * 4
+        sll $t6, $t1, 5 # t6 = t2 * 32
+        add $t4, $t4, $t5
+        add $t4, $t4, $t6
+        lw $t7, 0($t4) # t7 = colour of pixel at (BALL_X - 1, BALL_Y)
+        lw $t8, BG_COLOUR
+
+        bne $t7, $t8, check_ball_x_left_collision
+        jr $ra
+        # If (BALL_X - 1, BALL_Y) is NOT an empty pixel
+        check_ball_x_left_collision:
+            # Set BALL_VX = -BALL_VX
+            lw $t2, BALL_VX
+            sub $t2, $zero, $t2
+            sw $t2, BALL_VX
+            jr $ra
+
+    check_ball_x_right:
+        lw $t0, BALL_X
+        lw $t1, BALL_Y
+        add $t0, $t0, $t2
+
+        lw $t4, ADDR_DSPL # load starting address of bitmap display
+        sll $t5, $t0, 0 # t5 = t0 * 4
+        sll $t6, $t1, 5 # t6 = t2 * 32
+        add $t4, $t4, $t5
+        add $t4, $t4, $t6
+        lw $t7, 0($t4) # t7 = colour of pixel at (BALL_X + 1, BALL_Y)
+        lw $t8, BG_COLOUR
+
+        bne $t7, $t8, check_ball_x_right_collision
+        jr $ra
+        # If (BALL_X + 1, BALL_Y) is NOT an empty pixel
+        check_ball_x_right_collision:
+            # Set BALL_VX = -BALL_VX
+            lw $t2, BALL_VX
+            sub $t2, $zero, $t2
+            sw $t2, BALL_VX
+            jr $ra
+
+check_ball_y:
+    lw $t0, BALL_X
+    lw $t1, BALL_Y
+    lw $t2, BALL_VX
+    lw $t3, BALL_VY
+ 
+    bltz $t3, check_ball_y_top # if BALL_VY < 0
+    bgtz $t3, check_ball_y_bottom # if BALL_VY > 0
+
+    check_ball_y_top:
+        lw $t0, BALL_X
+        lw $t1, BALL_Y
+        add $t1, $t1, $t3
+
+        lw $t4, ADDR_DSPL # load starting address of bitmap display
+        sll $t5, $t0, 0 # t5 = t0 * 4
+        sll $t6, $t1, 5 # t6 = t2 * 32
+        add $t4, $t4, $t5
+        add $t4, $t4, $t6
+        lw $t7, 0($t4) # t7 = colour of pixel at (BALL_X, BALL_Y - 1)
+        lw $t8, BG_COLOUR
+
+        bne $t7, $t8, check_ball_y_top_collision
+        jr $ra
+        # If (BALL_X, BALL_Y - 1) is NOT an empty pixel
+        check_ball_y_top_collision:
+            # Set BALL_VY = -BALL_VY
+            lw $t3, BALL_VY
+            sub $t3, $zero, $t3
+            sw $t3, BALL_VY
+            jr $ra
+
+    check_ball_y_bottom:
+        lw $t0, BALL_X
+        lw $t1, BALL_Y
+        add $t1, $t1, $t3
+
+        lw $t4, ADDR_DSPL # load starting address of bitmap display
+        sll $t5, $t0, 0 # t5 = t0 * 4
+        sll $t6, $t1, 5 # t6 = t2 * 32
+        add $t4, $t4, $t5
+        add $t4, $t4, $t6
+        lw $t7, 0($t4) # t7 = colour of pixel at (BALL_X, BALL_Y + 1)
+        lw $t8, BG_COLOUR
+
+        bne $t7, $t8, check_ball_y_bottom_collision
+        jr $ra
+        # If (BALL_X, BALL_Y + 1) is NOT an empty pixel
+        check_ball_y_bottom_collision:
+            # Set BALL_VY = -BALL_VY
+            lw $t3, BALL_VY
+            sub $t3, $zero, $t3
+            sw $t3, BALL_VY
+            jr $ra
+
+
+
 
 # ======================================================================
 # draw_walls() -> None
