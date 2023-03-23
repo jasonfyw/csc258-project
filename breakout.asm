@@ -281,7 +281,7 @@ update_ball_pos:
     addi $sp, $sp, -4 # preserve ra of update_ball_pos
     sw $ra, 0($sp)
 
-    jal check_ball_y
+    jal update_ball_y
 
     lw $ra, 0($sp) # restore ra of update_ball_pos
     addi $sp, $sp, 4
@@ -289,7 +289,7 @@ update_ball_pos:
     addi $sp, $sp, -4 # preserve ra of update_ball_pos
     sw $ra, 0($sp)
 
-    jal check_ball_x
+    jal update_ball_x
 
     lw $ra, 0($sp) # restore ra of update_ball_pos
     addi $sp, $sp, 4
@@ -315,19 +315,23 @@ update_ball_pos:
     addi $sp, $sp, 4
 
     jr $ra
+# ======================================================================
 
 
-
-check_ball_x:
+# ======================================================================
+# update_ball_x() -> None
+# ======================================================================
+# Update the position of the ball in the x direction
+update_ball_x:
     lw $t0, BALL_X
     lw $t1, BALL_Y
     lw $t2, BALL_VX
     lw $t3, BALL_VY
  
-    bltz $t2, check_ball_x_left # if BALL_VX < 0
-    bgtz $t2, check_ball_x_right # if BALL_VX > 0
+    bltz $t2, update_ball_x_left # if BALL_VX < 0
+    bgtz $t2, update_ball_x_right # if BALL_VX > 0
 
-    check_ball_x_left:
+    update_ball_x_left:
         lw $t0, BALL_X
         lw $t1, BALL_Y
         add $t0, $t0, $t2
@@ -340,17 +344,17 @@ check_ball_x:
         lw $t7, 0($t4) # t7 = colour of pixel at (BALL_X - 1, BALL_Y)
         lw $t8, BG_COLOUR
 
-        bne $t7, $t8, check_ball_x_left_collision
+        bne $t7, $t8, update_ball_x_left_collision
         jr $ra
         # If (BALL_X - 1, BALL_Y) is NOT an empty pixel
-        check_ball_x_left_collision:
+        update_ball_x_left_collision:
             # Set BALL_VX = -BALL_VX
             lw $t2, BALL_VX
             sub $t2, $zero, $t2
             sw $t2, BALL_VX
             jr $ra
 
-    check_ball_x_right:
+    update_ball_x_right:
         lw $t0, BALL_X
         lw $t1, BALL_Y
         add $t0, $t0, $t2
@@ -363,26 +367,31 @@ check_ball_x:
         lw $t7, 0($t4) # t7 = colour of pixel at (BALL_X + 1, BALL_Y)
         lw $t8, BG_COLOUR
 
-        bne $t7, $t8, check_ball_x_right_collision
+        bne $t7, $t8, update_ball_x_right_collision
         jr $ra
         # If (BALL_X + 1, BALL_Y) is NOT an empty pixel
-        check_ball_x_right_collision:
+        update_ball_x_right_collision:
             # Set BALL_VX = -BALL_VX
             lw $t2, BALL_VX
             sub $t2, $zero, $t2
             sw $t2, BALL_VX
             jr $ra
+# ======================================================================
 
-check_ball_y:
+# ======================================================================
+# update_ball_y() -> None
+# ======================================================================
+# Update the position of the ball in the y direction
+update_ball_y:
     lw $t0, BALL_X
     lw $t1, BALL_Y
     lw $t2, BALL_VX
     lw $t3, BALL_VY
  
-    bltz $t3, check_ball_y_top # if BALL_VY < 0
-    bgtz $t3, check_ball_y_bottom # if BALL_VY > 0
+    bltz $t3, update_ball_y_top # if BALL_VY < 0
+    bgtz $t3, update_ball_y_bottom # if BALL_VY > 0
 
-    check_ball_y_top:
+    update_ball_y_top:
         lw $t0, BALL_X
         lw $t1, BALL_Y
         add $t1, $t1, $t3
@@ -395,17 +404,17 @@ check_ball_y:
         lw $t7, 0($t4) # t7 = colour of pixel at (BALL_X, BALL_Y - 1)
         lw $t8, BG_COLOUR
 
-        bne $t7, $t8, check_ball_y_top_collision
+        bne $t7, $t8, update_ball_y_top_collision
         jr $ra
         # If (BALL_X, BALL_Y - 1) is NOT an empty pixel
-        check_ball_y_top_collision:
+        update_ball_y_top_collision:
             # Set BALL_VY = -BALL_VY
             lw $t3, BALL_VY
             sub $t3, $zero, $t3
             sw $t3, BALL_VY
             jr $ra
 
-    check_ball_y_bottom:
+    update_ball_y_bottom:
         lw $t0, BALL_X
         lw $t1, BALL_Y
         add $t1, $t1, $t3
@@ -418,10 +427,10 @@ check_ball_y:
         lw $t7, 0($t4) # t7 = colour of pixel at (BALL_X, BALL_Y + 1)
         lw $t8, BG_COLOUR
 
-        bne $t7, $t8, check_ball_y_bottom_collision
+        bne $t7, $t8, update_ball_y_bottom_collision
         jr $ra
         # If (BALL_X, BALL_Y + 1) is NOT an empty pixel
-        check_ball_y_bottom_collision:
+        update_ball_y_bottom_collision:
             # Set BALL_VY = -BALL_VY
             lw $t3, BALL_VY
             sub $t3, $zero, $t3
