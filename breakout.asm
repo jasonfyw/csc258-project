@@ -34,7 +34,7 @@ BG_COLOUR:
     .word 0x000000
 # Milliseconds between each frame
 FRAME_TIME:
-    .word 83
+    .word 16
 # -----------------------------------
 # WALL DATA
 # -----------------------------------
@@ -46,7 +46,7 @@ TOP_WALL_THICKNESS:
     .word 8
 # Thickness of one of the side walls
 SIDE_WALL_THICKNESS:
-    .word 4
+    .word 8
 # -----------------------------------
 # BRICK DATA
 # -----------------------------------
@@ -61,10 +61,10 @@ BRICK_START_HEIGHT:
     .word 32
 # Width of one brick in pixels
 BRICK_WIDTH:
-    .word 8
+    .word 16
 # Height of one brick in pixels
 BRICK_HEIGHT:
-    .word 4
+    .word 8
 # -----------------------------------
 # PADDLE DATA
 # -----------------------------------
@@ -73,7 +73,7 @@ PADDLE_COLOUR:
     .word 0xeeeeee
 # Width of the paddle in pixels
 PADDLE_WIDTH:
-    .word 36
+    .word 240
 # Height of the paddle in pixels
 PADDLE_HEIGHT:
     .word 4
@@ -341,11 +341,35 @@ update_ball_x:
         jr $ra
 
         update_ball_x_collision_brick:
-            add $a0, $s0, $zero
+            # add $a0, $s0, $zero
+            lw $a0, BALL_X
+            lw $t0, BRICK_WIDTH
+            sub $a0, $a0, $t0
+
+
             add $a1, $s1, $zero
-            lw $t0, BALL_SIZE
+            lw $t0, BRICK_START_HEIGHT
+            sub $a1, $a1, $t0
+            lw $t1, BRICK_HEIGHT
+            div $a1, $a1, $t1
+            mult $a1, $a1, $t1
+            add $a1, $a1, $t0
+
+
+            # add $a1, $s1, $zero
+            # lw $a1, BALL_Y
+            # lw $t0, BRICK_HEIGHT
+            # sub $a1, $a1, $t0
+
+
+
+
+
+
+            lw $t0, BRICK_WIDTH
+            lw $t1, BRICK_HEIGHT
             add $a2, $a0, $t0 # t2 = BALL_X + BALL_SIZE
-            add $a3, $a1, $t0 # t3 = BALL_Y + BALL_SIZE
+            add $a3, $a1, $t1 # t3 = BALL_Y + BALL_SIZE
 
             # -----------------------------------
             # draw_rect()
@@ -406,10 +430,28 @@ update_ball_y:
 
         update_ball_y_collision_brick:
             add $a0, $s0, $zero
+            lw $t0, SIDE_WALL_THICKNESS
+            sub $a0, $a0, $t0
+            lw $t1, BRICK_WIDTH
+            div $s0, $s0, $t1
+            mult $s0, $s0, $t1
+            add $s0, $s0, $t0
+
+
             add $a1, $s1, $zero
-            lw $t0, BALL_SIZE
+            lw $a1, BALL_Y
+            lw $t0, BRICK_HEIGHT
+            sub $a1, $a1, $t0
+
+
+
+
+
+
+            lw $t0, BRICK_WIDTH
+            lw $t1, BRICK_HEIGHT
             add $a2, $a0, $t0 # t2 = BALL_X + BALL_SIZE
-            add $a3, $a1, $t0 # t3 = BALL_Y + BALL_SIZE
+            add $a3, $a1, $t1 # t3 = BALL_Y + BALL_SIZE
 
             # -----------------------------------
             # draw_rect()
