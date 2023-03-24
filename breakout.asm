@@ -311,16 +311,16 @@ update_ball_pos:
 # ======================================================================
 # Update the position of the ball in the x direction
 update_ball_x:
-    lw $t0, BALL_X
-    lw $t1, BALL_Y
+    lw $s0, BALL_X
+    lw $s1, BALL_Y
     lw $t2, BALL_VX
     lw $t3, BALL_VY
 
-    add $t0, $t0, $t2
+    add $s0, $s0, $t2
 
     lw $t4, ADDR_DSPL # load starting address of bitmap display
-    sll $t5, $t0, 0 # t5 = t0 * 4
-    sll $t6, $t1, 6 # t6 = t2 * 64
+    sll $t5, $s0, 0 # t5 = s0 * 4
+    sll $t6, $s1, 6 # t6 = t2 * 64
     add $t4, $t4, $t5
     add $t4, $t4, $t6
     lw $t7, 0($t4) # t7 = colour of pixel at (BALL_X - 1, BALL_Y)
@@ -334,30 +334,58 @@ update_ball_x:
         lw $t2, BALL_VX
         sub $t2, $zero, $t2
         sw $t2, BALL_VX
+        
+        # Check if collision tile is a brick
+        lw $t8, BRICK_COLOUR
+        beq $t7, $t8, update_ball_x_collision_brick
         jr $ra
 
+        update_ball_x_collision_brick:
+            add $a0, $s0, $zero
+            add $a1, $s1, $zero
+            lw $t0, BALL_SIZE
+            add $a2, $a0, $t0 # t2 = BALL_X + BALL_SIZE
+            add $a3, $a1, $t0 # t3 = BALL_Y + BALL_SIZE
 
-# ======================================================================
+            # -----------------------------------
+            # draw_rect()
+            addi $sp, $sp, -4 # preserve ra of draw_ball
+            sw $ra, 0($sp)
+
+            lw $t0, BG_COLOUR # pass in color argument on stack
+            addi $sp, $sp, -4
+            sw $t0, 0($sp)
+            
+            jal draw_rect
+            
+            lw $ra, 0($sp) # restore ra of draw_ball
+            addi $sp, $sp, 4
+
+            jr $ra
+
+
+
+# =====================================================
 
 # ======================================================================
 # update_ball_y() -> None
 # ======================================================================
 # Update the position of the ball in the y direction
 update_ball_y:
-    lw $t0, BALL_X
-    lw $t1, BALL_Y
+    lw $s0, BALL_X
+    lw $s1, BALL_Y
     lw $t2, BALL_VX
     lw $t3, BALL_VY
 
-    add $t1, $t1, $t3
+    add $s1, $s1, $t3
 
     lw $t4, DISPLAY_HEIGHT
     addi $t4, $t4, -4
-    bgt $t1, $t4, exit
+    bgt $s1, $t4, exit
 
     lw $t4, ADDR_DSPL # load starting address of bitmap display
-    sll $t5, $t0, 0 # t5 = t0 * 4
-    sll $t6, $t1, 6 # t6 = t2 * 64
+    sll $t5, $s0, 0 # t5 = s0 * 4
+    sll $t6, $s1, 6 # t6 = t2 * 64
     add $t4, $t4, $t5
     add $t4, $t4, $t6
     lw $t7, 0($t4) # t7 = colour of pixel at (BALL_X, BALL_Y - 1)
@@ -371,7 +399,33 @@ update_ball_y:
         lw $t3, BALL_VY
         sub $t3, $zero, $t3
         sw $t3, BALL_VY
+
+        lw $t8, BRICK_COLOUR
+        beq $t7, $t8, update_ball_y_collision_brick
         jr $ra
+
+        update_ball_y_collision_brick:
+            add $a0, $s0, $zero
+            add $a1, $s1, $zero
+            lw $t0, BALL_SIZE
+            add $a2, $a0, $t0 # t2 = BALL_X + BALL_SIZE
+            add $a3, $a1, $t0 # t3 = BALL_Y + BALL_SIZE
+
+            # -----------------------------------
+            # draw_rect()
+            addi $sp, $sp, -4 # preserve ra of draw_ball
+            sw $ra, 0($sp)
+
+            lw $t0, BG_COLOUR # pass in color argument on stack
+            addi $sp, $sp, -4
+            sw $t0, 0($sp)
+            
+            jal draw_rect
+            
+            lw $ra, 0($sp) # restore ra of draw_ball
+            addi $sp, $sp, 4
+
+            jr $ra
 
 
 # ======================================================================
