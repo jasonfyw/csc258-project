@@ -34,7 +34,7 @@ BG_COLOUR:
     .word 0x000000
 # Milliseconds between each frame
 FRAME_TIME:
-    .word 16
+    .word 60
 # -----------------------------------
 # WALL DATA
 # -----------------------------------
@@ -73,7 +73,7 @@ PADDLE_COLOUR:
     .word 0xeeeeee
 # Width of the paddle in pixels
 PADDLE_WIDTH:
-    .word 240
+    .word 36
 # Height of the paddle in pixels
 PADDLE_HEIGHT:
     .word 4
@@ -269,6 +269,14 @@ update_ball_pos:
     addi $sp, $sp, -4 # preserve ra of update_ball_pos
     sw $ra, 0($sp)
 
+    jal update_ball_x
+
+    lw $ra, 0($sp) # restore ra of update_ball_pos
+    addi $sp, $sp, 4
+
+    addi $sp, $sp, -4 # preserve ra of update_ball_pos
+    sw $ra, 0($sp)
+
     jal update_ball_y
 
     lw $ra, 0($sp) # restore ra of update_ball_pos
@@ -277,7 +285,7 @@ update_ball_pos:
     addi $sp, $sp, -4 # preserve ra of update_ball_pos
     sw $ra, 0($sp)
 
-    jal update_ball_x
+    jal update_ball_corner
 
     lw $ra, 0($sp) # restore ra of update_ball_pos
     addi $sp, $sp, 4
@@ -326,10 +334,10 @@ update_ball_x:
     lw $t7, 0($t4) # t7 = colour of pixel at (BALL_X - 1, BALL_Y)
     lw $t8, BG_COLOUR
 
-    bne $t7, $t8, update_ball_x_left_collision
+    bne $t7, $t8, update_ball_x_collision
     jr $ra
     # If (BALL_X - 1, BALL_Y) is NOT an empty pixel
-    update_ball_x_left_collision:
+    update_ball_x_collision:
         # Set BALL_VX = -BALL_VX
         lw $t2, BALL_VX
         sub $t2, $zero, $t2
@@ -341,51 +349,104 @@ update_ball_x:
         jr $ra
 
         update_ball_x_collision_brick:
-            # add $a0, $s0, $zero
-            lw $a0, BALL_X
-            lw $t0, BRICK_WIDTH
-            sub $a0, $a0, $t0
-
-
-            add $a1, $s1, $zero
-            lw $t0, BRICK_START_HEIGHT
-            sub $a1, $a1, $t0
-            lw $t1, BRICK_HEIGHT
-            div $a1, $a1, $t1
-            mult $a1, $a1, $t1
-            add $a1, $a1, $t0
-
-
-            # add $a1, $s1, $zero
-            # lw $a1, BALL_Y
-            # lw $t0, BRICK_HEIGHT
-            # sub $a1, $a1, $t0
-
-
-
-
-
-
-            lw $t0, BRICK_WIDTH
-            lw $t1, BRICK_HEIGHT
-            add $a2, $a0, $t0 # t2 = BALL_X + BALL_SIZE
-            add $a3, $a1, $t1 # t3 = BALL_Y + BALL_SIZE
-
-            # -----------------------------------
-            # draw_rect()
-            addi $sp, $sp, -4 # preserve ra of draw_ball
-            sw $ra, 0($sp)
-
-            lw $t0, BG_COLOUR # pass in color argument on stack
-            addi $sp, $sp, -4
-            sw $t0, 0($sp)
-            
-            jal draw_rect
-            
-            lw $ra, 0($sp) # restore ra of draw_ball
-            addi $sp, $sp, 4
-
+            lw $t3, BALL_VX
+            bgtz $t3 update_ball_x_collision_brick_left
+            bltz $t3 update_ball_x_collision_brick_right
             jr $ra
+
+            update_ball_x_collision_brick_left:
+                # add $a0, $s0, $zero
+                lw $a0, BALL_X
+                lw $t0, BRICK_WIDTH
+                sub $a0, $a0, $t0
+
+
+                add $a1, $s1, $zero
+                lw $t0, BRICK_START_HEIGHT
+                sub $a1, $a1, $t0
+                lw $t1, BRICK_HEIGHT
+                div $a1, $a1, $t1
+                mult $a1, $a1, $t1
+                add $a1, $a1, $t0
+
+
+                # add $a1, $s1, $zero
+                # lw $a1, BALL_Y
+                # lw $t0, BRICK_HEIGHT
+                # sub $a1, $a1, $t0
+
+
+
+
+
+
+                lw $t0, BRICK_WIDTH
+                lw $t1, BRICK_HEIGHT
+                add $a2, $a0, $t0 # t2 = BALL_X + BALL_SIZE
+                add $a3, $a1, $t1 # t3 = BALL_Y + BALL_SIZE
+
+                # -----------------------------------
+                # draw_rect()
+                addi $sp, $sp, -4 # preserve ra of draw_ball
+                sw $ra, 0($sp)
+
+                lw $t0, BG_COLOUR # pass in color argument on stack
+                addi $sp, $sp, -4
+                sw $t0, 0($sp)
+                
+                jal draw_rect
+                
+                lw $ra, 0($sp) # restore ra of draw_ball
+                addi $sp, $sp, 4
+
+                jr $ra
+
+            update_ball_x_collision_brick_right:
+                # add $a0, $s0, $zero
+                lw $a0, BALL_X
+                # lw $t0, BRICK_WIDTH
+                addi $a0, $a0, 4
+
+
+                add $a1, $s1, $zero
+                lw $t0, BRICK_START_HEIGHT
+                sub $a1, $a1, $t0
+                lw $t1, BRICK_HEIGHT
+                div $a1, $a1, $t1
+                mult $a1, $a1, $t1
+                add $a1, $a1, $t0
+
+
+                # add $a1, $s1, $zero
+                # lw $a1, BALL_Y
+                # lw $t0, BRICK_HEIGHT
+                # sub $a1, $a1, $t0
+
+
+
+
+
+
+                lw $t0, BRICK_WIDTH
+                lw $t1, BRICK_HEIGHT
+                add $a2, $a0, $t0 # t2 = BALL_X + BALL_SIZE
+                add $a3, $a1, $t1 # t3 = BALL_Y + BALL_SIZE
+
+                # -----------------------------------
+                # draw_rect()
+                addi $sp, $sp, -4 # preserve ra of draw_ball
+                sw $ra, 0($sp)
+
+                lw $t0, BG_COLOUR # pass in color argument on stack
+                addi $sp, $sp, -4
+                sw $t0, 0($sp)
+                
+                jal draw_rect
+                
+                lw $ra, 0($sp) # restore ra of draw_ball
+                addi $sp, $sp, 4
+
+                jr $ra
 
 
 
@@ -415,10 +476,13 @@ update_ball_y:
     lw $t7, 0($t4) # t7 = colour of pixel at (BALL_X, BALL_Y - 1)
     lw $t8, BG_COLOUR
 
-    bne $t7, $t8, update_ball_y_top_collision
+    bne $t7, $t8, update_ball_y_collision
+
     jr $ra
+
+    # -----------------------------------
     # If (BALL_X, BALL_Y - 1) is NOT an empty pixel
-    update_ball_y_top_collision:
+    update_ball_y_collision:
         # Set BALL_VY = -BALL_VY
         lw $t3, BALL_VY
         sub $t3, $zero, $t3
@@ -429,45 +493,260 @@ update_ball_y:
         jr $ra
 
         update_ball_y_collision_brick:
-            add $a0, $s0, $zero
-            lw $t0, SIDE_WALL_THICKNESS
-            sub $a0, $a0, $t0
-            lw $t1, BRICK_WIDTH
-            div $s0, $s0, $t1
-            mult $s0, $s0, $t1
-            add $s0, $s0, $t0
-
-
-            add $a1, $s1, $zero
-            lw $a1, BALL_Y
-            lw $t0, BRICK_HEIGHT
-            sub $a1, $a1, $t0
-
-
-
-
-
-
-            lw $t0, BRICK_WIDTH
-            lw $t1, BRICK_HEIGHT
-            add $a2, $a0, $t0 # t2 = BALL_X + BALL_SIZE
-            add $a3, $a1, $t1 # t3 = BALL_Y + BALL_SIZE
-
-            # -----------------------------------
-            # draw_rect()
-            addi $sp, $sp, -4 # preserve ra of draw_ball
-            sw $ra, 0($sp)
-
-            lw $t0, BG_COLOUR # pass in color argument on stack
-            addi $sp, $sp, -4
-            sw $t0, 0($sp)
-            
-            jal draw_rect
-            
-            lw $ra, 0($sp) # restore ra of draw_ball
-            addi $sp, $sp, 4
-
+            lw $t3, BALL_VY
+            bgtz $t3 update_ball_y_collision_brick_top
+            bltz $t3 update_ball_y_collision_brick_bottom
             jr $ra
+
+            update_ball_y_collision_brick_top:
+                add $a0, $s0, $zero
+                lw $t0, SIDE_WALL_THICKNESS
+                sub $a0, $a0, $t0
+                lw $t1, BRICK_WIDTH
+                div $a0, $a0, $t1
+                mult $a0, $a0, $t1
+                add $a0, $a0, $t0
+
+
+                add $a1, $s1, $zero
+                lw $a1, BALL_Y
+                lw $t0, BRICK_HEIGHT
+                sub $a1, $a1, $t0
+
+                lw $t0, BRICK_WIDTH
+                lw $t1, BRICK_HEIGHT
+                add $a2, $a0, $t0 # t2 = BALL_X + BALL_SIZE
+                add $a3, $a1, $t1 # t3 = BALL_Y + BALL_SIZE
+
+                # -----------------------------------
+                # draw_rect()
+                addi $sp, $sp, -4 # preserve ra of draw_ball
+                sw $ra, 0($sp)
+
+                lw $t0, BG_COLOUR # pass in color argument on stack
+                addi $sp, $sp, -4
+                sw $t0, 0($sp)
+                
+                jal draw_rect
+                
+                lw $ra, 0($sp) # restore ra of draw_ball
+                addi $sp, $sp, 4
+
+                jr $ra
+
+            update_ball_y_collision_brick_bottom:
+                add $a0, $s0, $zero
+                lw $t0, SIDE_WALL_THICKNESS
+                sub $a0, $a0, $t0
+                lw $t1, BRICK_WIDTH
+                div $a0, $a0, $t1
+                mult $a0, $a0, $t1
+                add $a0, $a0, $t0
+
+
+                add $a1, $s1, $zero
+                lw $a1, BALL_Y
+                # lw $t0, BRICK_HEIGHT
+                addi $a1, $a1, 4
+
+                lw $t0, BRICK_WIDTH
+                lw $t1, BRICK_HEIGHT
+                add $a2, $a0, $t0 # t2 = BALL_X + BALL_SIZE
+                add $a3, $a1, $t1 # t3 = BALL_Y + BALL_SIZE
+
+                # -----------------------------------
+                # draw_rect()
+                addi $sp, $sp, -4 # preserve ra of draw_ball
+                sw $ra, 0($sp)
+
+                lw $t0, BG_COLOUR # pass in color argument on stack
+                addi $sp, $sp, -4
+                sw $t0, 0($sp)
+                
+                jal draw_rect
+                
+                lw $ra, 0($sp) # restore ra of draw_ball
+                addi $sp, $sp, 4
+
+                jr $ra
+
+
+
+update_ball_corner:
+    lw $s0, BALL_X
+    lw $s1, BALL_Y
+    lw $t2, BALL_VX
+    lw $t3, BALL_VY
+
+    add $s0, $s0, $t2
+    add $s1, $s1, $t3
+
+    lw $t4, ADDR_DSPL # load starting address of bitmap display
+    sll $t5, $s0, 0 # t5 = s0 * 4
+    sll $t6, $s1, 6 # t6 = t2 * 64
+    add $t4, $t4, $t5
+    add $t4, $t4, $t6
+    lw $t7, 0($t4) # t7 = colour of pixel at (BALL_X + BALL_VX, BALL_Y + BALL_VY)
+    lw $t8, BRICK_COLOUR
+
+    beq $t7, $t8, update_ball_corner_collision
+
+    jr $ra
+
+    update_ball_corner_collision:
+        lw $t3, BALL_VX
+        lw $t4, BALL_VY
+        sub $t3, $zero, $t3
+        sub $t4, $zero, $t4
+        sw $t3, BALL_VX
+        sw $t4, BALL_VY
+
+        bltz $t2, update_ball_corner_collision_left
+        bgtz $t2, update_ball_corner_collision_right
+        jr $ra
+
+        update_ball_corner_collision_left:
+            bgtz $t1, update_ball_corner_collision_topleft
+            bltz $t1, update_ball_corner_collision_bottomleft
+            jr $ra
+
+            update_ball_corner_collision_topleft:
+                lw $a0, BALL_X
+                lw $t0, BRICK_WIDTH
+                sub $a0, $a0, $t0
+                # subi $a0, $a0, 4
+
+                # add $a1, $s1, $zero
+                lw $a1, BALL_Y
+                lw $t0, BRICK_HEIGHT
+                sub $a1, $a1, $t0
+                # subi $a1, $a1, 4
+
+
+                lw $t0, BRICK_WIDTH
+                lw $t1, BRICK_HEIGHT
+                add $a2, $a0, $t0 # t2 = BALL_X + BALL_SIZE
+                add $a3, $a1, $t1 # t3 = BALL_Y + BALL_SIZE
+
+                # -----------------------------------
+                # draw_rect()
+                addi $sp, $sp, -4 # preserve ra of draw_ball
+                sw $ra, 0($sp)
+
+                lw $t0, BG_COLOUR # pass in color argument on stack
+                addi $sp, $sp, -4
+                sw $t0, 0($sp)
+                
+                jal draw_rect
+                
+                lw $ra, 0($sp) # restore ra of draw_ball
+                addi $sp, $sp, 4
+
+                jr $ra
+            update_ball_corner_collision_bottomleft:
+                lw $a0, BALL_X
+                lw $t0, BRICK_WIDTH
+                sub $a0, $a0, $t0
+                # subi $a0, $a0, 4
+
+                # add $a1, $s1, $zero
+                lw $a1, BALL_Y
+                # lw $t0, BRICK_HEIGHT
+                # sub $a1, $a1, $t0
+                addi $a1, $a1, 4
+
+
+                lw $t0, BRICK_WIDTH
+                lw $t1, BRICK_HEIGHT
+                add $a2, $a0, $t0 # t2 = BALL_X + BALL_SIZE
+                add $a3, $a1, $t1 # t3 = BALL_Y + BALL_SIZE
+
+                # -----------------------------------
+                # draw_rect()
+                addi $sp, $sp, -4 # preserve ra of draw_ball
+                sw $ra, 0($sp)
+
+                lw $t0, BG_COLOUR # pass in color argument on stack
+                addi $sp, $sp, -4
+                sw $t0, 0($sp)
+                
+                jal draw_rect
+                
+                lw $ra, 0($sp) # restore ra of draw_ball
+                addi $sp, $sp, 4
+
+                jr $ra
+
+        update_ball_corner_collision_right:
+            bltz $t1, update_ball_corner_collision_topright
+            bgtz $t1, update_ball_corner_collision_bottomright
+            jr $ra
+
+            update_ball_corner_collision_topright:
+                lw $a0, BALL_X
+                # lw $t0, BRICK_WIDTH
+                # sub $a0, $a0, $t0
+                addi $a0, $a0, 4
+
+                # add $a1, $s1, $zero
+                lw $a1, BALL_Y
+                lw $t0, BRICK_HEIGHT
+                sub $a1, $a1, $t0
+                # subi $a1, $a1, 4
+
+
+                lw $t0, BRICK_WIDTH
+                lw $t1, BRICK_HEIGHT
+                add $a2, $a0, $t0 # t2 = BALL_X + BALL_SIZE
+                add $a3, $a1, $t1 # t3 = BALL_Y + BALL_SIZE
+
+                # -----------------------------------
+                # draw_rect()
+                addi $sp, $sp, -4 # preserve ra of draw_ball
+                sw $ra, 0($sp)
+
+                lw $t0, BG_COLOUR # pass in color argument on stack
+                addi $sp, $sp, -4
+                sw $t0, 0($sp)
+                
+                jal draw_rect
+                
+                lw $ra, 0($sp) # restore ra of draw_ball
+                addi $sp, $sp, 4
+                jr $ra
+            update_ball_corner_collision_bottomright:
+                lw $a0, BALL_X
+                # lw $t0, BRICK_WIDTH
+                # sub $a0, $a0, $t0
+                addi $a0, $a0, 4
+
+                # add $a1, $s1, $zero
+                lw $a1, BALL_Y
+                # lw $t0, BRICK_HEIGHT
+                # sub $a1, $a1, $t0
+                addi $a1, $a1, 4
+
+
+                lw $t0, BRICK_WIDTH
+                lw $t1, BRICK_HEIGHT
+                add $a2, $a0, $t0 # t2 = BALL_X + BALL_SIZE
+                add $a3, $a1, $t1 # t3 = BALL_Y + BALL_SIZE
+
+                # -----------------------------------
+                # draw_rect()
+                addi $sp, $sp, -4 # preserve ra of draw_ball
+                sw $ra, 0($sp)
+
+                lw $t0, BG_COLOUR # pass in color argument on stack
+                addi $sp, $sp, -4
+                sw $t0, 0($sp)
+                
+                jal draw_rect
+                
+                lw $ra, 0($sp) # restore ra of draw_ball
+                addi $sp, $sp, 4
+                
+                jr $ra
 
 
 # ======================================================================
