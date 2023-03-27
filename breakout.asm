@@ -108,6 +108,8 @@ BALL_VX:
 # Y component of the ball velocity in pixels per frame
 BALL_VY:
     .word -4
+IS_PAUSED:
+    .word 0
 
 ##############################################################################
 # Code
@@ -139,10 +141,15 @@ game_loop:
     # 1b. Check which key has been pressed
     keyboard_input:
         lw $a0, 4($t0)
-        beq $a0, 0x61, respond_to_a
-        beq $a0, 0x64, respond_to_d
+        lw $t1, IS_PAUSED
         beq $a0, 0x71, respond_to_q
+        beq $a0, 0x70, respond_to_p
+        beqz $t1, game_loop_keyboard_not_paused
         j keyboard_input_done
+        game_loop_keyboard_not_paused:
+            beq $a0, 0x61, respond_to_a
+            beq $a0, 0x64, respond_to_d
+            j keyboard_input_done
 
         # Move paddle left
         respond_to_a:
@@ -220,6 +227,14 @@ game_loop:
         respond_to_q:
             j exit
 
+        # Pause game loop
+        respond_to_p:
+            lw $t1, IS_PAUSED
+            li $t2, 1
+            sub $t1, $t2, $t1
+            sw $t1, IS_PAUSED
+            j keyboard_input_done
+
 
     # -----------------------------------
     keyboard_input_done:
@@ -227,15 +242,23 @@ game_loop:
         # 2b. Update locations (paddle, ball)
         # -----------------------------------
         # 3. Draw the screen
-        jal draw_paddle
-        jal update_ball_pos
-        # 4. Sleep
+        lw $t1, IS_PAUSED
+        beqz $t1, game_loop_not_paused
         li 		$v0, 32
         lw 		$a0, FRAME_TIME
         syscall
-
-        # 5. Go back to 1
         b game_loop
+
+        game_loop_not_paused:
+            jal draw_paddle
+            jal update_ball_pos
+            # 4. Sleep
+            li 		$v0, 32
+            lw 		$a0, FRAME_TIME
+            syscall
+
+            # 5. Go back to 1
+            b game_loop
 
 
 # ======================================================================
