@@ -36,6 +36,16 @@ BG_COLOUR:
 FRAME_TIME:
     .word 60
 # -----------------------------------
+# ON SCREEN DISPLAY
+# -----------------------------------
+# Starting offsets for each heart
+HEART_ADDR:
+    .word 520, 556, 592
+HEART_FULL_COLOUR:
+    .word 0xe54b4b
+HEART_EMPTY_COLOUR:
+    .word 0x000000
+# -----------------------------------
 # WALL DATA
 # -----------------------------------
 # Colour of the walls
@@ -43,7 +53,7 @@ WALL_COLOUR:
     .word 0x555555
 # Thickness of the top wall
 TOP_WALL_THICKNESS:
-    .word 8
+    .word 36
 # Thickness of one of the side walls
 SIDE_WALL_THICKNESS:
     .word 8
@@ -55,10 +65,10 @@ BRICK_COLOUR:
     .word 0x82d2c8
 # Number of rows of bricks
 BRICK_ROWS:
-    .word 24
+    .word 28
 # y height of first row of bricks
 BRICK_START_HEIGHT:
-    .word 32
+    .word 56
 # Width of one brick in pixels
 BRICK_WIDTH:
     .word 16
@@ -132,6 +142,7 @@ main:
     # Initialize the game
     jal draw_walls
     jal draw_bricks
+    jal draw_initial_hearts
     b game_loop
     
 exit:
@@ -291,8 +302,25 @@ lose_life:
     lw $t0, LIVES
     addi $t0, $t0, -1
     sw $t0, LIVES
-    beqz $t0, game_over # if LIVES == 0
 
+    # -----------------------------------
+    # Update hearts display
+    la $t1, HEART_ADDR # address of HEART_ADDR
+    sll $t2, $t0, 2 # offset from HEART_ADDR
+    add $t2, $t2, $t1 # HEART_ADDR + offset
+    lw $a0, ($t2)
+    # add $a0, $t1, $t2
+    lw $a1, HEART_EMPTY_COLOUR
+    
+    addi $sp, $sp, -4 # preserve ra
+    sw $ra, 0($sp)
+    jal draw_heart
+    lw $ra, 0($sp) # restore ra
+    addi $sp, $sp, 4
+    # -----------------------------------
+
+    lw $t0, LIVES
+    beqz $t0, game_over # if LIVES == 0
 
     # -----------------------------------
     # Draw over previous paddle position
@@ -1066,6 +1094,102 @@ draw_ball:
 
     jr $ra
 # ======================================================================
+
+# ======================================================================
+# draw_initial_hearts() -> None
+# ======================================================================
+# Draw three red hearts
+draw_initial_hearts:
+    la $t0, HEART_ADDR
+    lw $a0, 0($t0)
+    lw $a1, HEART_FULL_COLOUR
+    addi $sp, $sp, -4 # preserve ra
+    sw $ra, 0($sp)
+    jal draw_heart
+    lw $ra, 0($sp) # restore ra
+    addi $sp, $sp, 4
+
+    la $t0, HEART_ADDR
+    lw $a0, 4($t0)
+    lw $a1, HEART_FULL_COLOUR
+    addi $sp, $sp, -4 # preserve ra
+    sw $ra, 0($sp)
+    jal draw_heart
+    lw $ra, 0($sp) # restore ra
+    addi $sp, $sp, 4
+
+    la $t0, HEART_ADDR
+    lw $a0, 8($t0)
+    lw $a1, HEART_FULL_COLOUR
+    addi $sp, $sp, -4 # preserve ra
+    sw $ra, 0($sp)
+    jal draw_heart
+    lw $ra, 0($sp) # restore ra
+    addi $sp, $sp, 4
+
+    jr $ra
+
+
+# ======================================================================
+# draw_heart(top_left_corner: int, colour: int) -> None
+# ======================================================================
+# Draw a heart in the 7x5 region extending from <top_left_corner>
+draw_heart:
+    add $t0, $zero, $a0 # load in <top_left_corner>
+    lw $t1, DISPLAY_WIDTH
+    # -----------------------------------
+    lw $t7, ADDR_DSPL
+    add $t7, $t7, $t0
+
+    sw $a1, 4($t7)
+    sw $a1, 8($t7)
+    sw $a1, 16($t7)
+    sw $a1, 20($t7)
+    # -----------------------------------
+    lw $t7, ADDR_DSPL
+    add $t7, $t7, $t0
+    add $t7, $t7, $t1
+
+    sw $a1, 0($t7)
+    sw $a1, 4($t7)
+    sw $a1, 8($t7)
+    sw $a1, 12($t7)
+    sw $a1, 16($t7)
+    sw $a1, 20($t7)
+    sw $a1, 24($t7)
+    # -----------------------------------
+    lw $t7, ADDR_DSPL
+    add $t7, $t7, $t0
+    add $t7, $t7, $t1
+    add $t7, $t7, $t1
+
+    sw $a1, 4($t7)
+    sw $a1, 8($t7)
+    sw $a1, 12($t7)
+    sw $a1, 16($t7)
+    sw $a1, 20($t7)
+    # -----------------------------------
+    lw $t7, ADDR_DSPL
+    add $t7, $t7, $t0
+    add $t7, $t7, $t1
+    add $t7, $t7, $t1
+    add $t7, $t7, $t1
+
+    sw $a1, 8($t7)
+    sw $a1, 12($t7)
+    sw $a1, 16($t7)
+    # -----------------------------------
+    lw $t7, ADDR_DSPL
+    add $t7, $t7, $t0
+    add $t7, $t7, $t1
+    add $t7, $t7, $t1
+    add $t7, $t7, $t1
+    add $t7, $t7, $t1
+
+    sw $a1, 12($t7)
+    
+    jr $ra
+
 
 # ======================================================================
 # draw_rect(x_start: int, y_start: int, x_end: int, y_end: int, color: int) -> None
