@@ -45,6 +45,8 @@ HEART_FULL_COLOUR:
     .word 0xe54b4b
 HEART_EMPTY_COLOUR:
     .word 0x000000
+SCORE_ADDR:
+    .word 716, 732, 748
 # -----------------------------------
 # WALL DATA
 # -----------------------------------
@@ -127,6 +129,9 @@ IS_LAUNCHING:
 # Number of lives
 LIVES:
     .word 3
+# Score of the number of bricks broken
+SCORE:
+    .word 0
 
 
 ##############################################################################
@@ -143,6 +148,7 @@ main:
     jal draw_walls
     jal draw_bricks
     jal draw_initial_hearts
+    jal draw_score
     b game_loop
     
 exit:
@@ -507,6 +513,16 @@ update_ball_x:
         jr $ra
 
         update_ball_x_collision_brick:
+            lw $t9, SCORE
+            addi $t9, $t9, 1
+            sw $t9, SCORE
+
+            addi $sp, $sp, -4 # preserve ra
+            sw $ra, 0($sp)
+            jal draw_score
+            lw $ra, 0($sp) # restore ra
+            addi $sp, $sp, 4
+
             lw $t3, BALL_VX
             bgtz $t3 update_ball_x_collision_brick_left
             bltz $t3 update_ball_x_collision_brick_right
@@ -660,6 +676,16 @@ update_ball_y:
             jr $ra
 
             update_ball_y_collision_brick:
+                lw $t9, SCORE
+                addi $t9, $t9, 1
+                sw $t9, SCORE
+                
+                addi $sp, $sp, -4 # preserve ra
+                sw $ra, 0($sp)
+                jal draw_score
+                lw $ra, 0($sp) # restore ra
+                addi $sp, $sp, 4
+
                 lw $t3, BALL_VY
                 bgtz $t3 update_ball_y_collision_brick_top
                 bltz $t3 update_ball_y_collision_brick_bottom
@@ -773,8 +799,18 @@ update_ball_corner:
         jr $ra
 
         update_ball_corner_collision_left:
-            bgtz $t3, update_ball_corner_collision_topleft
-            bltz $t3, update_ball_corner_collision_bottomleft
+            lw $t9, SCORE
+            addi $t9, $t9, 1
+            sw $t9, SCORE
+            
+            addi $sp, $sp, -4 # preserve ra
+            sw $ra, 0($sp)
+            jal draw_score
+            lw $ra, 0($sp) # restore ra
+            addi $sp, $sp, 4
+
+            bltz $t3, update_ball_corner_collision_topleft
+            bgtz $t3, update_ball_corner_collision_bottomleft
             jr $ra
 
             update_ball_corner_collision_topleft:
@@ -845,6 +881,16 @@ update_ball_corner:
                 jr $ra
 
         update_ball_corner_collision_right:
+            lw $t9, SCORE
+            addi $t9, $t9, 1
+            sw $t9, SCORE
+            
+            addi $sp, $sp, -4 # preserve ra
+            sw $ra, 0($sp)
+            jal draw_score
+            lw $ra, 0($sp) # restore ra
+            addi $sp, $sp, 4
+
             bltz $t3, update_ball_corner_collision_topright
             bgtz $t3, update_ball_corner_collision_bottomright
             jr $ra
@@ -1189,6 +1235,592 @@ draw_heart:
     sw $a1, 12($t7)
     
     jr $ra
+
+
+# ======================================================================
+# draw_score() -> None
+# ======================================================================
+# Draw the current score
+draw_score:
+    lw $t0, SCORE
+
+    li $t1, 10      # Load the divisor (10) into $t1
+    div $t0, $t0, $t1  # Divide $t0 by $t1 to get rid of the least significant digit
+
+    mflo $t2       # Move the quotient of the division (the value in $t0) to $t2
+    li $t1, 10      # Load the value 10 into $t1
+    mul $t2, $t2, $t1  # Multiply the quotient in $t2 by the value 10
+    lw $t0, SCORE
+    sub $t6, $t0, $t2
+
+    # -----------------------------------
+
+    la $t9, SCORE_ADDR
+    lw $a0, 8($t9)
+    add $a1, $zero, $t6
+    addi $sp, $sp, -4 # preserve ra
+    sw $ra, 0($sp)
+    jal draw_digit
+    lw $ra, 0($sp) # restore ra
+    addi $sp, $sp, 4
+
+
+
+    
+
+    lw $t0, SCORE
+    li $t1, 10
+    div $t0, $t0, $t1
+
+    li $t1, 10      # Load the divisor (10) into $t1
+    div $t0, $t0, $t1  # Divide $t0 by $t1 to get rid of the least significant digit
+
+    mflo $t2       # Move the quotient of the division (the value in $t0) to $t2
+    li $t1, 10      # Load the value 10 into $t1
+    mul $t2, $t2, $t1  # Multiply the quotient in $t2 by the value 10
+    lw $t0, SCORE
+    li $t1, 10
+    div $t0, $t0, $t1
+    sub $t7, $t0, $t2
+
+
+
+    la $t9, SCORE_ADDR
+    lw $a0, 4($t9)
+    add $a1, $zero, $t7
+    addi $sp, $sp, -4 # preserve ra
+    sw $ra, 0($sp)
+    jal draw_digit
+    lw $ra, 0($sp) # restore ra
+    addi $sp, $sp, 4
+
+
+
+
+
+
+
+    lw $t0, SCORE
+    li $t1, 100
+    div $t0, $t0, $t1
+
+    li $t1, 10      # Load the divisor (10) into $t1
+    div $t0, $t0, $t1  # Divide $t0 by $t1 to get rid of the least significant digit
+
+    mflo $t2       # Move the quotient of the division (the value in $t0) to $t2
+    li $t1, 10      # Load the value 10 into $t1
+    mul $t2, $t2, $t1  # Multiply the quotient in $t2 by the value 10
+    lw $t0, SCORE
+    li $t1, 100
+    div $t0, $t0, $t1
+    sub $t8, $t0, $t2
+
+    la $t9, SCORE_ADDR
+    lw $a0, 0($t9)
+    add $a1, $zero, $t8
+    addi $sp, $sp, -4 # preserve ra
+    sw $ra, 0($sp)
+    jal draw_digit
+    lw $ra, 0($sp) # restore ra
+    addi $sp, $sp, 4
+
+    jr $ra
+# ======================================================================
+
+# ======================================================================
+# draw_digit(top_left_corner: int, val: int) -> None
+# ======================================================================
+# Draw a 3x5 digit in white extending from <top_left_corner> with value <val>
+draw_digit:
+    add $t0, $zero, $a0 # load in <top_left_corner>
+    lw $t1, DISPLAY_WIDTH
+
+    # -----------------------------------
+
+    lw $t7, ADDR_DSPL
+    add $t7, $t7, $t0
+    lw $t8, WALL_COLOUR
+    sw $t8, 0($t7)
+    sw $t8, 4($t7)
+    sw $t8, 8($t7)
+    add $t7, $t7, $t1
+    sw $t8, 0($t7)
+    sw $t8, 4($t7)
+    sw $t8, 8($t7)
+    add $t7, $t7, $t1
+    sw $t8, 0($t7)
+    sw $t8, 4($t7)
+    sw $t8, 8($t7)
+    add $t7, $t7, $t1
+    sw $t8, 0($t7)
+    sw $t8, 4($t7)
+    sw $t8, 8($t7)
+    add $t7, $t7, $t1
+    sw $t8, 0($t7)
+    sw $t8, 4($t7)
+    sw $t8, 8($t7)
+
+    # -----------------------------------
+
+    li $t8, 0xffffff
+
+    li $t9, 0
+    beq $a1, $t9, draw_digit_0
+    li $t9, 1
+    beq $a1, $t9, draw_digit_1
+    li $t9, 2
+    beq $a1, $t9, draw_digit_2
+    li $t9, 3
+    beq $a1, $t9, draw_digit_3
+    li $t9, 4
+    beq $a1, $t9, draw_digit_4
+    li $t9, 5
+    beq $a1, $t9, draw_digit_5
+    li $t9, 6
+    beq $a1, $t9, draw_digit_6
+    li $t9, 7
+    beq $a1, $t9, draw_digit_7
+    li $t9, 8
+    beq $a1, $t9, draw_digit_8
+    li $t9, 9
+    beq $a1, $t9, draw_digit_9
+
+    draw_digit_0:
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+
+        jr $ra
+    draw_digit_1:
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+
+        sw $t8, 4($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 4($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 4($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+
+        jr $ra
+    draw_digit_2:
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+
+        jr $ra
+    draw_digit_3:
+    # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+
+        jr $ra
+    draw_digit_4:
+    # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+
+        sw $t8, 0($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 8($t7)
+
+        jr $ra
+    draw_digit_5:
+    # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+
+        jr $ra
+    draw_digit_6:
+    # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+
+        jr $ra
+    draw_digit_7:
+    # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 8($t7)
+
+        jr $ra
+    draw_digit_8:
+    # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+
+        jr $ra
+    draw_digit_9:
+    # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 8($t7)
+        # -----------------------------------
+        lw $t7, ADDR_DSPL
+        add $t7, $t7, $t0
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+        add $t7, $t7, $t1
+
+        sw $t8, 0($t7)
+        sw $t8, 4($t7)
+        sw $t8, 8($t7)
+
+        jr $ra
 
 
 # ======================================================================
