@@ -101,7 +101,7 @@ BALL_X:
     .word 128
 # Y position of the ball
 BALL_Y:
-    .word 128
+    .word 228
 # X component of the ball velocity in pixels per frame
 BALL_VX:
     .word -4
@@ -110,6 +110,8 @@ BALL_VY:
     .word -4
 IS_PAUSED:
     .word 0
+IS_LAUNCHING:
+    .word 1
 
 ##############################################################################
 # Code
@@ -147,6 +149,7 @@ game_loop:
         beqz $t1, game_loop_keyboard_not_paused
         j keyboard_input_done
         game_loop_keyboard_not_paused:
+            beq $a0, 0x20, respond_to_space
             beq $a0, 0x61, respond_to_a
             beq $a0, 0x64, respond_to_d
             j keyboard_input_done
@@ -223,6 +226,18 @@ game_loop:
                 sw $t1, PADDLE_X
                 j keyboard_input_done
 
+        # Launch ball when space pressed
+        respond_to_space:
+            lw $t0, IS_LAUNCHING
+            bnez $t0, respond_to_space_is_launching
+            j keyboard_input_done
+
+            respond_to_space_is_launching:
+                li $t1, 0
+                sw $t1, IS_LAUNCHING
+
+                j keyboard_input_done
+
         # Quit game when q pressed
         respond_to_q:
             j exit
@@ -289,51 +304,68 @@ update_ball_pos:
 
     # -----------------------------------
     # Check if there is an obstacle toward the top of the ball and move accordingly
-    addi $sp, $sp, -4 # preserve ra of update_ball_pos
-    sw $ra, 0($sp)
-
-    jal update_ball_x
-
-    lw $ra, 0($sp) # restore ra of update_ball_pos
-    addi $sp, $sp, 4
-
-    addi $sp, $sp, -4 # preserve ra of update_ball_pos
-    sw $ra, 0($sp)
-
-    jal update_ball_y
-
-    lw $ra, 0($sp) # restore ra of update_ball_pos
-    addi $sp, $sp, 4
-
-    addi $sp, $sp, -4 # preserve ra of update_ball_pos
-    sw $ra, 0($sp)
-
-    jal update_ball_corner
-
-    lw $ra, 0($sp) # restore ra of update_ball_pos
-    addi $sp, $sp, 4
-
-
-    lw $t0, BALL_X
-    lw $t1, BALL_Y
-    lw $t2, BALL_VX
-    lw $t3, BALL_VY
-    add $t0, $t0, $t2
-    add $t1, $t1, $t3
+    lw $t1, IS_LAUNCHING
+    beqz $t1, update_ball_pos_not_launching
+    
+    lw $t0, PADDLE_X
+    lw $t1, PADDLE_WIDTH
+    # li $t2, 2
+    # div $t1, $t1, $t2
+    addi $t1, $t1, -20
+    add $t0, $t0, $t1
     sw $t0, BALL_X
-    sw $t1, BALL_Y
 
-    # -----------------------------------
-    # Draw ball at new position
-    addi $sp, $sp, -4 # preserve ra of update_ball_pos
-    sw $ra, 0($sp)
+    j update_ball_pos_continue
 
-    jal draw_ball
+    update_ball_pos_not_launching:
+        addi $sp, $sp, -4 # preserve ra of update_ball_pos
+        sw $ra, 0($sp)
 
-    lw $ra, 0($sp) # restore ra of update_ball_pos
-    addi $sp, $sp, 4
+        jal update_ball_x
 
-    jr $ra
+        lw $ra, 0($sp) # restore ra of update_ball_pos
+        addi $sp, $sp, 4
+
+        addi $sp, $sp, -4 # preserve ra of update_ball_pos
+        sw $ra, 0($sp)
+
+        jal update_ball_y
+
+        lw $ra, 0($sp) # restore ra of update_ball_pos
+        addi $sp, $sp, 4
+
+        addi $sp, $sp, -4 # preserve ra of update_ball_pos
+        sw $ra, 0($sp)
+
+        jal update_ball_corner
+
+        lw $ra, 0($sp) # restore ra of update_ball_pos
+        addi $sp, $sp, 4
+
+
+        lw $t0, BALL_X
+        lw $t1, BALL_Y
+        lw $t2, BALL_VX
+        lw $t3, BALL_VY
+        add $t0, $t0, $t2
+        add $t1, $t1, $t3
+        sw $t0, BALL_X
+        sw $t1, BALL_Y
+
+        j update_ball_pos_continue
+
+    update_ball_pos_continue:
+        # -----------------------------------
+        # Draw ball at new position
+        addi $sp, $sp, -4 # preserve ra of update_ball_pos
+        sw $ra, 0($sp)
+
+        jal draw_ball
+
+        lw $ra, 0($sp) # restore ra of update_ball_pos
+        addi $sp, $sp, 4
+
+        jr $ra
 # ======================================================================
 
 
@@ -629,8 +661,8 @@ update_ball_corner:
         jr $ra
 
         update_ball_corner_collision_left:
-            bgtz $t1, update_ball_corner_collision_topleft
-            bltz $t1, update_ball_corner_collision_bottomleft
+            bgtz $t3, update_ball_corner_collision_topleft
+            bltz $t3, update_ball_corner_collision_bottomleft
             jr $ra
 
             update_ball_corner_collision_topleft:
@@ -701,8 +733,8 @@ update_ball_corner:
                 jr $ra
 
         update_ball_corner_collision_right:
-            bltz $t1, update_ball_corner_collision_topright
-            bgtz $t1, update_ball_corner_collision_bottomright
+            bltz $t3, update_ball_corner_collision_topright
+            bgtz $t3, update_ball_corner_collision_bottomright
             jr $ra
 
             update_ball_corner_collision_topright:
