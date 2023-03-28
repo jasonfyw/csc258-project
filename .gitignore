@@ -1,1 +1,9 @@
 .DS_Store
+
+# additional LaTeX files
+project_report.aux
+project_report.fdb_latexmk
+project_report.fls
+project_report.log
+project_report.synctex.gz
+project_report.toc
