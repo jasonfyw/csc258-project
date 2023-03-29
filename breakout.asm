@@ -550,7 +550,7 @@ update_ball_x:
                 sub $a1, $a1, $t0
                 lw $t1, BRICK_HEIGHT
                 div $a1, $a1, $t1
-                mult $a1, $a1, $t1
+                mul $a1, $a1, $t1
                 add $a1, $a1, $t0
 
 
@@ -597,7 +597,7 @@ update_ball_x:
                 sub $a1, $a1, $t0
                 lw $t1, BRICK_HEIGHT
                 div $a1, $a1, $t1
-                mult $a1, $a1, $t1
+                mul $a1, $a1, $t1
                 add $a1, $a1, $t0
 
 
@@ -742,7 +742,7 @@ update_ball_y:
                     sub $a0, $a0, $t0
                     lw $t1, BRICK_WIDTH
                     div $a0, $a0, $t1
-                    mult $a0, $a0, $t1
+                    mul $a0, $a0, $t1
                     add $a0, $a0, $t0
 
 
@@ -778,7 +778,7 @@ update_ball_y:
                     sub $a0, $a0, $t0
                     lw $t1, BRICK_WIDTH
                     div $a0, $a0, $t1
-                    mult $a0, $a0, $t1
+                    mul $a0, $a0, $t1
                     add $a0, $a0, $t0
 
 
