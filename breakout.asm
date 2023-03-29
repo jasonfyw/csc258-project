@@ -83,6 +83,8 @@ BRICK_HEIGHT:
 # Colour of the paddle
 PADDLE_COLOUR:
     .word 0xeeeeee
+PADDLE_COLOUR_CENTRE:
+    .word 0xbbbbbb
 # Width of the paddle in pixels
 PADDLE_WIDTH:
     .word 36
@@ -506,11 +508,19 @@ update_ball_x:
         lw $t2, BALL_VX
         sub $t2, $zero, $t2
         sw $t2, BALL_VX
+
+        lw $t8, PADDLE_COLOUR_CENTRE
+        beq $t7, $t8, update_ball_x_collision_paddle_centre
         
         # Check if collision tile is a brick
         lw $t8, BRICK_COLOUR
         beq $t7, $t8, update_ball_x_collision_brick
         jr $ra
+
+        update_ball_x_collision_paddle_centre:
+            li $t2, 0
+            sw $t2, BALL_VY
+            jr $ra
 
         update_ball_x_collision_brick:
             lw $t9, SCORE
@@ -671,9 +681,44 @@ update_ball_y:
             sub $t3, $zero, $t3
             sw $t3, BALL_VY
 
+            lw $t8, PADDLE_COLOUR_CENTRE
+            beq $t7, $t8, update_ball_y_collision_paddle_centre
+
+            lw $t8, PADDLE_COLOUR
+            beq $t7, $t8, update_ball_y_collision_paddle
+
             lw $t8, BRICK_COLOUR
             beq $t7, $t8, update_ball_y_collision_brick
             jr $ra
+
+            update_ball_y_collision_paddle_centre:
+                li $t2, 0
+                sw $t2, BALL_VX
+                jr $ra
+
+            update_ball_y_collision_paddle:
+                lw $t2, BALL_VX
+                beqz $t2, update_ball_y_collision_paddle_zero_vx
+                jr $ra
+
+                update_ball_y_collision_paddle_zero_vx:
+                    lw $t1, PADDLE_X
+                    lw $t0, PADDLE_WIDTH
+                    li $t2, 3
+                    div $t0, $t0, $t2
+                    add $t1, $t1, $t0
+
+                    lw $t5, BALL_X
+
+                    ble $t5, $t1, update_ball_y_collision_paddle_zero_vx_left
+                    li $t2, 4
+                    sw $t2, BALL_VX
+                    jr $ra
+
+                    update_ball_y_collision_paddle_zero_vx_left:
+                        li $t2, -4
+                        sw $t2, BALL_VX
+                        jr $ra
 
             update_ball_y_collision_brick:
                 lw $t9, SCORE
@@ -1108,6 +1153,40 @@ draw_paddle:
     lw $ra, 0($sp) # restore ra of draw_paddle
     addi $sp, $sp, 4
     # -----------------------------------
+
+
+
+
+
+    lw $a0, PADDLE_X # t0 = PADDLE_X
+    lw $t0, PADDLE_WIDTH
+    li $t2, 3
+    div $t3, $t0, $t2
+    add $a0, $a0, $t3
+
+    lw $a1, PADDLE_Y # t1 = PADDLE_Y
+    addi $a1, $a1, -4
+
+    add $a2, $a0, $t3 # t2 = PADDLE_X + PADDLE_WIDTH
+
+    lw $t1, PADDLE_HEIGHT
+    add $a3, $a1, $t1 # t3 = PADDLE_Y + PADDLE_HEIGHT
+
+    # -----------------------------------
+    # draw_rect()
+    addi $sp, $sp, -4 # preserve ra of draw_paddle
+    sw $ra, 0($sp)
+
+    lw $t0, PADDLE_COLOUR_CENTRE # pass in color argument on stack
+    addi $sp, $sp, -4
+    sw $t0, 0($sp)
+    
+    jal draw_rect
+    
+    lw $ra, 0($sp) # restore ra of draw_paddle
+    addi $sp, $sp, 4
+    # -----------------------------------
+
 
     jr $ra
 # ======================================================================
