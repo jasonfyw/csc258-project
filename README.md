@@ -13,4 +13,4 @@ Ensure that the keyboard and bitmap display are connected and the display is con
 - `p`: pause the game
 - `q`: quit the game
 
-Launch the ball with `space` and then destroy all the bricks to win! If the ball reaches the bottom of the screen, a life will be lost. After three lives lost, the game will end.
+Launch the ball with `space` and then destroy all the bricks to win! Hitting the paddle in different spots results in the ball rebounding with a difference trajectory. If the ball reaches the bottom of the screen, a life will be lost. After three lives lost, the game will end.
