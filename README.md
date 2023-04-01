@@ -2,6 +2,8 @@
 
 Atari Breakout implemented in MIPS Assembly for the CSC258 project (Winter 2023).
 
+![Screenshot of scene](./media/milestone5.png)
+
 ## How to play
 
 Clone the repo or download `breakout.asm` and open `breakout.asm` with a MIPS assembler/simulator (e.g. Saturn or MARS).
